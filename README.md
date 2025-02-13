@@ -43,4 +43,4 @@ node_modulesのインストール方法
 ### Git の基本操作
 
 基本的な Git の操作については、以下のサイトを参考にすること。  
-[Git 基本操作まとめ - Qiita](https://qiita.com/)
+[Git 基本操作まとめ - Qiita](https://qiita.com/baningugozira/items/7941816694217fbd3d95)
