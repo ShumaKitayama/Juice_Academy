@@ -12,6 +12,11 @@ services:
     build: ./frontend
     ports:
       - "3000:3000"
+    volumes: # 開発効率上げ用
+      - ./frontend/src:/app/src
+    tty: true # TailwindCSSのホットリロード用
+    environment: # TailwindCSSのホットリロード用
+      - CHOKIDAR_USEPOLLING=true
 
   mongodb:
     image: mongo:latest
