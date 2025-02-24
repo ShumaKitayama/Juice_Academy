@@ -11,10 +11,26 @@ import (
 func main() {
 	// MongoDB への接続（Docker Compose の mongodb サービスを利用）
 	dbClient := config.ConnectDB("mongodb://mongodb:27017")
-	_ = dbClient
-	// ※必要に応じて dbClient を各コントローラーで利用する方法を検討する
+
+	// ユーザーコレクションの初期化
+	controllers.InitUserCollection(dbClient)
 
 	router := gin.Default()
+
+	// CORS設定の追加
+	router.Use(func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	})
 
 	// 公開 API グループ
 	api := router.Group("/api")
