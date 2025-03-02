@@ -11,4 +11,4 @@ COPY . .
 EXPOSE 3000
 
 # TailwindとViteを統合して起動（別プロセスのwatchを避ける）
-CMD ["npm", "run", "dev"] 
+CMD ["npm", "run", "dev"]

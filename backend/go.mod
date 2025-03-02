@@ -5,6 +5,8 @@ go 1.20
 require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gin-gonic/gin v1.9.1
+	github.com/joho/godotenv v1.5.1
+	github.com/stripe/stripe-go/v72 v72.122.0
 	go.mongodb.org/mongo-driver v1.11.2
 )
 

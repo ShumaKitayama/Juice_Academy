@@ -12,8 +12,9 @@ func main() {
 	// MongoDB への接続（Docker Compose の mongodb サービスを利用）
 	dbClient := config.ConnectDB("mongodb://mongodb:27017")
 
-	// ユーザーコレクションの初期化
+	// コレクションの初期化
 	controllers.InitUserCollection(dbClient)
+	controllers.InitPaymentCollection(dbClient)
 
 	router := gin.Default()
 
@@ -38,6 +39,10 @@ func main() {
 		api.POST("/register", controllers.RegisterHandler)
 		api.POST("/login", controllers.LoginHandler)
 		api.GET("/announcements", controllers.GetAnnouncementsHandler)
+
+		// Stripe決済情報登録のためのエンドポイント（フロントエンドからのアクセス用）
+		api.POST("/payment/setup-intent", controllers.SetupIntentHandler)
+		api.POST("/payment/confirm-setup", controllers.ConfirmSetupHandler)
 	}
 
 	// JWT 認証が必要な API グループ
@@ -52,7 +57,8 @@ func main() {
 		protected.DELETE("/announcements/:id", middleware.AdminMiddleware(), controllers.DeleteAnnouncementHandler)
 
 		// 決済関連
-		protected.POST("/payment", controllers.PaymentHandler)
+		protected.POST("/payment/customer", controllers.CreateStripeCustomerHandler)
+		protected.POST("/payment/subscription", controllers.CreateSubscriptionHandler)
 		protected.GET("/payment/history", controllers.PaymentHistoryHandler)
 	}
 
