@@ -1,3 +1,5 @@
 prompt.txt
 prompt.yaml
 frontend/node_modules
+node_modules
+.env

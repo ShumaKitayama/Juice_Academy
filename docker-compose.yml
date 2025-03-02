@@ -7,16 +7,19 @@ services:
       - "8080:8080"
     depends_on:
       - mongodb
+    volumes:
+      - ./.env:/app/.env
 
   frontend:
     build: ./frontend
     ports:
       - "3000:3000"
-    volumes: # 開発効率上げ用
+    volumes: 
       - ./frontend/src:/app/src
-    tty: true # TailwindCSSのホットリロード用
-    environment: # TailwindCSSのホットリロード用
-      - CHOKIDAR_USEPOLLING=true
+      - ./.env:/app/.env
+    # コンテナが終了しないようにするための最小限の設定
+    tty: true
+    stdin_open: true
 
   mongodb:
     image: mongo:latest
