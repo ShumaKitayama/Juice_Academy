@@ -1,42 +1,23 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { paymentAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/Button';
 import Card from '../components/Card';
-import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorAlert from '../components/ErrorAlert';
-import SuccessAlert from '../components/SuccessAlert';
 import PaymentSummary from '../components/PaymentSummary';
 
 // サブスクリプションプラン
 const subscriptionPlans = [
   {
-    id: 'price_basic',
-    name: 'ベーシックプラン',
-    price: 1980,
-    description: '基本的な機能が利用できるプラン',
+    id: 'prod_Rq1DHH7IbFPodY', // Stripeの商品ID
+    priceId: 'price_1QwLAuLzIlR5iTTutkWUfidn', // 実際のStripeのpriceIDに置き換える必要があります
+    name: 'juice学園',
+    price: 3000,
+    description: 'ドリンク飲み放題',
     features: [
-      '基本的な学習コンテンツへのアクセス',
-      '月1回のオンラインセミナー参加',
-      'コミュニティフォーラムへのアクセス',
+      'ドリンクサーバーの利用が可能',
     ],
-    color: 'blue',
-  },
-  {
-    id: 'price_premium',
-    name: 'プレミアムプラン',
-    price: 3980,
-    description: '全ての機能が利用できる上位プラン',
-    features: [
-      '全ての学習コンテンツへのアクセス',
-      '月4回のオンラインセミナー参加',
-      'コミュニティフォーラムへのアクセス',
-      '専属メンターによるサポート',
-      '課題の個別フィードバック',
-    ],
-    recommended: true,
-    color: 'indigo',
+    color: 'orange',
   },
 ];
 
@@ -44,10 +25,8 @@ const Subscription: React.FC = () => {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
   
   const { user } = useAuth();
-  const navigate = useNavigate();
 
   // 選択されたプランの情報を取得
   const getSelectedPlanInfo = () => {
@@ -78,43 +57,26 @@ const Subscription: React.FC = () => {
     setError(null);
 
     try {
-      await paymentAPI.createSubscription(user.id, selectedPlan);
-      setSuccess(true);
+      const selectedPlanInfo = getSelectedPlanInfo();
+      if (!selectedPlanInfo) {
+        throw new Error('プラン情報が見つかりません');
+      }
+
+      // サブスクリプションを作成（既存のカード情報を使用）
+      const response = await paymentAPI.createSubscription(user.id, selectedPlanInfo.priceId);
       
-      // 登録成功後、3秒後にダッシュボードへリダイレクト
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 3000);
+      // レスポンスに含まれるリダイレクト先に移動
+      if (response.data.redirect) {
+        window.location.href = response.data.redirect;
+      } else if (response.data.url) {
+        // 後方互換性のため、urlがある場合はそちらにリダイレクト
+        window.location.href = response.data.url;
+      }
     } catch (err: any) {
       setError(err.response?.data?.error || 'サブスクリプションの登録に失敗しました');
-    } finally {
       setLoading(false);
     }
   };
-
-  if (success) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8 animate-fade-in">
-          <SuccessAlert 
-            title="登録完了" 
-            message="サブスクリプションが正常に登録されました。ダッシュボードに移動します。" 
-            className="animate-slide-up"
-          />
-          <div className="text-center">
-            <Button
-              onClick={() => navigate('/dashboard')}
-              variant="primary"
-              size="medium"
-              className="btn-hover-effect"
-            >
-              ダッシュボードへ
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   const selectedPlanInfo = getSelectedPlanInfo();
 
@@ -132,16 +94,16 @@ const Subscription: React.FC = () => {
 
         {error && <ErrorAlert message={error} className="animate-slide-up" />}
 
-        <div className="mt-12 space-y-4 sm:mt-16 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-6 lg:max-w-4xl lg:mx-auto">
+        <div className="mt-12 space-y-4 sm:mt-16 sm:space-y-0 sm:grid sm:grid-cols-1 sm:gap-6 lg:max-w-4xl lg:mx-auto">
           {subscriptionPlans.map((plan, index) => (
             <Card
               key={plan.id}
               className={`divide-y divide-gray-200 plan-card animate-slide-up ${
-                plan.recommended ? `border-2 border-${plan.color}-500 relative` : ''
+                plan.id === 'prod_Rq1DHH7IbFPodY' ? `border-2 border-${plan.color}-500 relative` : ''
               } ${selectedPlan === plan.id ? 'selected' : ''}`}
               style={{ animationDelay: `${index * 150}ms` }}
             >
-              {plan.recommended && (
+              {plan.id === 'prod_Rq1DHH7IbFPodY' && (
                 <div className={`absolute top-0 right-0 -mt-4 -mr-4 bg-${plan.color}-500 rounded-full px-3 py-1 text-white text-xs font-semibold transform rotate-3`}>
                   おすすめ
                 </div>

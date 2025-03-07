@@ -125,6 +125,16 @@ export const paymentAPI = {
   setDefaultPaymentMethod: async (paymentMethodId: string) => {
     return api.post('/payment/methods/default', { paymentMethodId });
   },
+
+  // サブスクリプションの状態を取得
+  getSubscriptionStatus: async () => {
+    return api.get('/subscription/status');
+  },
+
+  // サブスクリプションをキャンセル
+  cancelSubscription: async () => {
+    return api.post('/subscription/cancel');
+  },
 };
 
 export default api; 
