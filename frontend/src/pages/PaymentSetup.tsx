@@ -16,6 +16,26 @@ const PaymentSetup: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  // 既存の支払い方法を確認
+  useEffect(() => {
+    const checkExistingPaymentMethods = async () => {
+      if (!user) return;
+
+      try {
+        const response = await paymentAPI.getPaymentMethods();
+        if (response.data.paymentMethods && response.data.paymentMethods.length > 0) {
+          // 既に支払い方法が登録されている場合は支払い方法管理ページにリダイレクト
+          navigate('/payment-method');
+        }
+      } catch (err) {
+        // エラーが発生しても続行（支払い方法がない可能性）
+        console.error('支払い方法の確認中にエラーが発生しました:', err);
+      }
+    };
+
+    checkExistingPaymentMethods();
+  }, [user, navigate]);
+
   // Stripe顧客情報を作成
   useEffect(() => {
     const createStripeCustomer = async () => {

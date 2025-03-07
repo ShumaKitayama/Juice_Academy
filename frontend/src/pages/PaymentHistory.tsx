@@ -9,8 +9,9 @@ interface PaymentRecord {
   id: string;
   amount: number;
   status: string;
-  created: number;
+  created_at: string;
   description: string;
+  type?: string;
 }
 
 const PaymentHistory: React.FC = () => {
@@ -26,7 +27,7 @@ const PaymentHistory: React.FC = () => {
       try {
         setLoading(true);
         const response = await paymentAPI.getPaymentHistory();
-        setPayments(response.data);
+        setPayments(response.data.payment_history || []);
         setError(null);
       } catch (err) {
         console.error('支払い履歴の取得に失敗しました:', err);
@@ -40,8 +41,9 @@ const PaymentHistory: React.FC = () => {
   }, [user]);
 
   // 日付をフォーマットする関数
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp * 1000).toLocaleDateString('ja-JP', {
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('ja-JP', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -59,11 +61,28 @@ const PaymentHistory: React.FC = () => {
   // 支払いステータスを日本語に変換する関数
   const translateStatus = (status: string) => {
     const statusMap: { [key: string]: string } = {
-      succeeded: '成功',
+      success: '成功',
       pending: '処理中',
       failed: '失敗',
+      upcoming: '予定',
     };
     return statusMap[status] || status;
+  };
+
+  // 支払いタイプに応じたスタイルを返す関数
+  const getStatusStyle = (status: string) => {
+    switch (status) {
+      case 'success':
+        return 'bg-green-100 text-green-800';
+      case 'upcoming':
+        return 'bg-blue-100 text-blue-800';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'failed':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
   };
 
   const renderContent = () => {
@@ -100,22 +119,18 @@ const PaymentHistory: React.FC = () => {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {payments.map((payment) => (
-              <tr key={payment.id}>
+              <tr key={payment.id} className={payment.status === 'upcoming' ? 'bg-blue-50' : ''}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {formatDate(payment.created)}
+                  {formatDate(payment.created_at)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {payment.description}
+                  {payment.description || (payment.type === 'subscription' ? 'サブスクリプション料金' : '支払い')}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {formatAmount(payment.amount)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    payment.status === 'succeeded' ? 'bg-green-100 text-green-800' : 
-                    payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
-                    'bg-red-100 text-red-800'
-                  }`}>
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusStyle(payment.status)}`}>
                     {translateStatus(payment.status)}
                   </span>
                 </td>

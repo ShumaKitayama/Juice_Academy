@@ -46,3 +46,46 @@ func DeleteAccountHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "アカウントを削除しました"})
 }
+
+// SetAdminStatus は特定のユーザーに管理者権限を付与または削除します
+// 注: このエンドポイント自体も管理者権限で保護する必要があります
+func SetAdminStatus(c *gin.Context) {
+	userID := c.Param("id")
+	var requestBody struct {
+		IsAdmin bool `json:"isAdmin"`
+	}
+
+	if err := c.ShouldBindJSON(&requestBody); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "無効なリクエスト形式です"})
+		return
+	}
+
+	// ObjectID に変換
+	objID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "無効なユーザーIDです"})
+		return
+	}
+
+	// データベースからユーザーを取得して更新
+	ctx := context.Background()
+	filter := bson.M{"_id": objID}
+	update := bson.M{"$set": bson.M{"isAdmin": requestBody.IsAdmin}}
+
+	result, err := userCollection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ユーザー情報の更新に失敗しました"})
+		return
+	}
+
+	if result.MatchedCount == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "ユーザーが見つかりません"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "管理者権限が更新されました",
+		"userId":  userID,
+		"isAdmin": requestBody.IsAdmin,
+	})
+}

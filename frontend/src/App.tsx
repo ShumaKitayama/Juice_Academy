@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -9,6 +8,9 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import PaymentSetup from './pages/PaymentSetup';
 import Subscription from './pages/Subscription';
+import SubscriptionSuccess from './pages/SubscriptionSuccess';
+import SubscriptionCancel from './pages/SubscriptionCancel';
+import SubscriptionManagement from './pages/SubscriptionManagement';
 import PaymentHistory from './pages/PaymentHistory';
 import PaymentConfirmation from './pages/PaymentConfirmation';
 import MyPage from './pages/MyPage';
@@ -34,10 +36,16 @@ function App() {
                 <Route path="/payment-setup" element={<PaymentSetup />} />
                 <Route path="/payment-confirmation" element={<PaymentConfirmation />} />
                 
+                {/* サブスクリプション関連 */}
+                <Route path="/subscription" element={<Subscription />} />
+                <Route path="/subscription/success" element={<SubscriptionSuccess />} />
+                <Route path="/subscription/cancel" element={<SubscriptionCancel />} />
+                <Route path="/subscription/manage" element={<SubscriptionManagement />} />
+                
                 {/* マイページとその子ルート */}
                 <Route path="/mypage" element={<MyPage />}>
                   <Route index element={<Profile />} />
-                  <Route path="subscription" element={<Subscription />} />
+                  <Route path="subscription" element={<SubscriptionManagement />} />
                   <Route path="payment-history" element={<PaymentHistory />} />
                   <Route path="payment-method" element={<PaymentMethod />} />
                 </Route>

@@ -164,7 +164,7 @@ const PaymentMethod: React.FC = () => {
             variant="primary"
             size="medium"
             onClick={handleAddPaymentMethod}
-            disabled={loading}
+            disabled={loading || paymentMethods.length > 0}
           >
             新しい支払い方法を追加
           </Button>
@@ -183,6 +183,11 @@ const PaymentMethod: React.FC = () => {
                 <p>
                   登録されたクレジットカードは、サブスクリプションの自動更新に使用されます。
                   カード情報はStripeの安全な環境で管理され、当サイトのサーバーには保存されません。
+                  {paymentMethods.length > 0 && (
+                    <span className="block mt-2 font-medium">
+                      ※ 現在、カードが登録済みのため新しいカードの追加はできません。
+                    </span>
+                  )}
                 </p>
               </div>
             </div>
