@@ -1,9 +1,30 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import Loading from './Loading';
 
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
+  const [isLoading, setIsLoading] = useState(
+    sessionStorage.getItem('isLoading') === 'true'
+  );
+
+  useEffect(() => {
+    if (isLoading) {
+      const timeout = setTimeout(() => {
+        // 1.5秒後にステートをfalseに更新＆セッションストレージを削除
+        setIsLoading(false);
+        sessionStorage.removeItem('isLoading');
+      }, 1500);
+      return () => clearTimeout(timeout);
+    }
+  }, [isLoading]);
+
+  if (isLoading) {
+    return (
+      <Loading /> // ローディング中のコンポーネントを表示
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
