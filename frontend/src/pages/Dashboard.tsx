@@ -1,9 +1,36 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import Loading from './Loading';
 
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
+  const [isLoading, setIsLoading] = useState(
+    sessionStorage.getItem('isLoading') === 'true'
+  );
+
+  useEffect(() => {
+    // コンポーネントがマウントされた時点で現在の状態をコンソールに表示
+    console.log('Dashboard mounted, isLoading:', 
+      sessionStorage.getItem('isLoading') === 'true');
+      
+    if (isLoading) {
+      const timeout = setTimeout(() => {
+        // 先にステートを更新してからセッションストレージを削除
+        setIsLoading(false);
+        sessionStorage.removeItem('isLoading');
+        console.log('Timeout completed, isLoading removed from sessionStorage');
+      }, 1500);
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [isLoading]);
+
+  if (isLoading) {
+    return (
+      <Loading /> // ローディング中のコンポーネントを表示
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

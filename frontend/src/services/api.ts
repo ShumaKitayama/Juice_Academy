@@ -60,6 +60,9 @@ export const authAPI = {
     // トークンとユーザー情報をローカルストレージに保存
     localStorage.setItem('token', response.data.token);
     localStorage.setItem('user', JSON.stringify(response.data.user));
+    // ローディング画面を表示するためにsessionStorageを使用
+    sessionStorage.removeItem('isLoading');
+    sessionStorage.setItem('isLoading', 'true');
     return response;
   },
 
