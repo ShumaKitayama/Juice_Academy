@@ -10,18 +10,12 @@ const Dashboard: React.FC = () => {
   );
 
   useEffect(() => {
-    // コンポーネントがマウントされた時点で現在の状態をコンソールに表示
-    console.log('Dashboard mounted, isLoading:', 
-      sessionStorage.getItem('isLoading') === 'true');
-      
     if (isLoading) {
       const timeout = setTimeout(() => {
-        // 先にステートを更新してからセッションストレージを削除
+        // 1.5秒後にステートをfalseに更新＆セッションストレージを削除
         setIsLoading(false);
         sessionStorage.removeItem('isLoading');
-        console.log('Timeout completed, isLoading removed from sessionStorage');
       }, 1500);
-      
       return () => clearTimeout(timeout);
     }
   }, [isLoading]);
