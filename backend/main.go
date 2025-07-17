@@ -18,8 +18,9 @@ func main() {
 	// コレクションの初期化
 	controllers.InitUserCollection(dbClient)
 	controllers.InitPaymentCollection(dbClient)
-	controllers.InitSubscriptionCollection(dbClient) // サブスクリプションコレクションの初期化
-	middleware.InitUserCollection(db)                // ミドルウェア用のユーザーコレクション初期化
+	controllers.InitSubscriptionCollection(dbClient)
+	controllers.InitAnnouncementCollection(db) // お知らせコレクションの初期化を追加
+	middleware.InitUserCollection(db)
 
 	// 管理者ユーザーの作成
 	controllers.SeedAdminUser(db)
@@ -47,6 +48,7 @@ func main() {
 		api.POST("/register", controllers.RegisterHandler)
 		api.POST("/login", controllers.LoginHandler)
 		api.GET("/announcements", controllers.GetAnnouncementsHandler)
+		api.GET("/announcements/:id", controllers.GetAnnouncementByIdHandler)
 
 		// Stripe決済情報登録のためのエンドポイント（フロントエンドからのアクセス用）
 		api.POST("/payment/setup-intent", controllers.SetupIntentHandler)
@@ -81,7 +83,7 @@ func main() {
 
 	// 管理者専用ルート
 	adminRoutes := api.Group("/admin")
-	adminRoutes.Use(middleware.AdminRequired())
+	adminRoutes.Use(middleware.JWTAuthMiddleware(), middleware.AdminRequired())
 	{
 		adminRoutes.POST("/announcements", controllers.CreateAnnouncementHandler)
 		adminRoutes.PUT("/announcements/:id", controllers.UpdateAnnouncementHandler)

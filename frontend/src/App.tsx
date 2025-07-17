@@ -16,6 +16,11 @@ import PaymentConfirmation from './pages/PaymentConfirmation';
 import MyPage from './pages/MyPage';
 import Profile from './pages/Profile';
 import PaymentMethod from './pages/PaymentMethod';
+import AnnouncementList from './pages/AnnouncementList';
+import AnnouncementDetail from './pages/AnnouncementDetail';
+import AdminAnnouncementList from './pages/AdminAnnouncementList';
+import AdminAnnouncementCreate from './pages/AdminAnnouncementCreate';
+import AdminAnnouncementEdit from './pages/AdminAnnouncementEdit';
 import './App.css';
 
 function App() {
@@ -36,6 +41,10 @@ function App() {
                 <Route path="/payment-setup" element={<PaymentSetup />} />
                 <Route path="/payment-confirmation" element={<PaymentConfirmation />} />
                 
+                {/* お知らせ関連 */}
+                <Route path="/announcements" element={<AnnouncementList />} />
+                <Route path="/announcements/:id" element={<AnnouncementDetail />} />
+                
                 {/* サブスクリプション関連 */}
                 <Route path="/subscription" element={<Subscription />} />
                 <Route path="/subscription/success" element={<SubscriptionSuccess />} />
@@ -49,6 +58,11 @@ function App() {
                   <Route path="payment-history" element={<PaymentHistory />} />
                   <Route path="payment-method" element={<PaymentMethod />} />
                 </Route>
+                
+                {/* 管理者ルート */}
+                <Route path="/admin/announcements" element={<AdminAnnouncementList />} />
+                <Route path="/admin/announcements/create" element={<AdminAnnouncementCreate />} />
+                <Route path="/admin/announcements/edit/:id" element={<AdminAnnouncementEdit />} />
               </Route>
               
               {/* デフォルトリダイレクト */}
