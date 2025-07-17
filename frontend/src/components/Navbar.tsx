@@ -7,6 +7,9 @@ const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  
+  // ユーザーが管理者かどうかをチェック
+  const isAdmin = user?.role === 'admin' || user?.isAdmin === true;
 
   const handleLogout = () => {
     logout();
@@ -54,6 +57,19 @@ const Navbar: React.FC = () => {
                 >
                   マイページ
                 </Link>
+                {/* 管理者向けメニュー */}
+                {isAdmin && (
+                  <Link 
+                    to="/admin/announcements" 
+                    className={`px-4 py-2 rounded-md text-sm font-medium ${
+                      location.pathname.includes('/admin') 
+                        ? 'text-indigo-600' 
+                        : 'text-gray-700 hover:text-indigo-500'
+                    }`}
+                  >
+                    管理者ページ
+                  </Link>
+                )}
                 <div className="relative ml-3">
                   <div className="flex items-center">
                     <button 
@@ -68,6 +84,7 @@ const Navbar: React.FC = () => {
                       </div>
                       <span className="ml-2 text-sm font-medium text-gray-700">
                         {user?.nameKana || 'ユーザー'}
+                        {isAdmin && <span className="ml-1 text-xs text-indigo-600">(管理者)</span>}
                       </span>
                     </div>
                   </div>
@@ -140,6 +157,20 @@ const Navbar: React.FC = () => {
                 >
                   マイページ
                 </Link>
+                {/* モバイル管理者向けメニュー */}
+                {isAdmin && (
+                  <Link 
+                    to="/admin/announcements" 
+                    className={`block px-3 py-2 rounded-md text-base font-medium ${
+                      location.pathname.includes('/admin') 
+                        ? 'text-indigo-600 bg-indigo-50' 
+                        : 'text-gray-700 hover:text-indigo-500 hover:bg-indigo-50'
+                    }`}
+                    onClick={toggleMenu}
+                  >
+                    管理者ページ
+                  </Link>
+                )}
                 <div className="pt-4 pb-3 border-t border-gray-200">
                   <div className="flex items-center px-3">
                     <div className="h-8 w-8 rounded-full bg-juice-orange-200 flex items-center justify-center text-juice-orange-600 font-medium">
@@ -147,6 +178,7 @@ const Navbar: React.FC = () => {
                     </div>
                     <span className="ml-3 text-base font-medium text-gray-700">
                       {user?.nameKana || 'ユーザー'}
+                      {isAdmin && <span className="ml-1 text-xs text-indigo-600">(管理者)</span>}
                     </span>
                   </div>
                   <div className="mt-3 px-2">

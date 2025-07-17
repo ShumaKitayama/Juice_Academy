@@ -8,6 +8,7 @@ interface User {
   role: string;
   studentId: string;
   nameKana: string;
+  isAdmin?: boolean;  // 管理者フラグを追加
 }
 
 // 認証コンテキストの型定義

@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -28,6 +29,7 @@ type User struct {
 	PasswordHash string             `bson:"password_hash" json:"-"`
 	CreatedAt    time.Time          `bson:"created_at" json:"created_at"`
 	UpdatedAt    time.Time          `bson:"updated_at" json:"updated_at"`
+	IsAdmin      bool               `bson:"is_admin" json:"is_admin"`
 }
 
 // InitUserCollection はユーザーコレクションを初期化
@@ -79,6 +81,7 @@ func RegisterHandler(c *gin.Context) {
 		PasswordHash: string(hashedPassword),
 		CreatedAt:    now,
 		UpdatedAt:    now,
+		IsAdmin:      false,
 	}
 
 	result, err := userCollection.InsertOne(ctx, user)
@@ -124,6 +127,7 @@ func LoginHandler(c *gin.Context) {
 		"user_id": user.ID.Hex(),
 		"email":   user.Email,
 		"role":    user.Role,
+		"isAdmin": user.IsAdmin,
 		"exp":     time.Now().Add(time.Hour * 72).Unix(),
 	})
 
@@ -133,6 +137,10 @@ func LoginHandler(c *gin.Context) {
 		return
 	}
 
+	// デバッグ用にトークンの内容をログ出力
+	fmt.Printf("生成されたトークン情報: user_id=%s, email=%s, role=%s, isAdmin=%v\n",
+		user.ID.Hex(), user.Email, user.Role, user.IsAdmin)
+
 	c.JSON(http.StatusOK, gin.H{
 		"token": tokenString,
 		"user": gin.H{
@@ -141,6 +149,7 @@ func LoginHandler(c *gin.Context) {
 			"role":      user.Role,
 			"studentId": user.StudentID,
 			"nameKana":  user.NameKana,
+			"isAdmin":   user.IsAdmin,
 		},
 	})
 }

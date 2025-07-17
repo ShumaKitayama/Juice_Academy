@@ -67,6 +67,20 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 		}
 
 		c.Set("user_id", userID)
+
+		// 追加のユーザー情報をコンテキストに設定
+		// 管理者フラグがあればそれも設定
+		if isAdmin, exists := claims["isAdmin"]; exists {
+			c.Set("is_admin", isAdmin)
+			fmt.Printf("トークンから管理者フラグを設定: %v\n", isAdmin)
+		}
+
+		// ロールがあればそれも設定
+		if role, exists := claims["role"]; exists {
+			c.Set("role", role)
+			fmt.Printf("トークンからロールを設定: %v\n", role)
+		}
+
 		c.Next()
 	}
 }
