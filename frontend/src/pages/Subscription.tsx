@@ -9,8 +9,8 @@ import PaymentSummary from '../components/PaymentSummary';
 // サブスクリプションプラン
 const subscriptionPlans = [
   {
-    id: 'prod_Rq1DHH7IbFPodY', // Stripeの商品ID
-    priceId: 'price_1QwLAuLzIlR5iTTutkWUfidn', // 実際のStripeのpriceIDに置き換える必要があります
+    id: import.meta.env.VITE_STRIPE_PRODUCT_ID, // 環境変数から商品IDを取得
+    priceId: import.meta.env.VITE_STRIPE_PRICE_ID, // 環境変数からpriceIDを取得
     name: 'juice学園',
     price: 3000,
     description: 'ドリンク飲み放題',
@@ -96,49 +96,50 @@ const Subscription: React.FC = () => {
 
         <div className="mt-12 space-y-4 sm:mt-16 sm:space-y-0 sm:grid sm:grid-cols-1 sm:gap-6 lg:max-w-4xl lg:mx-auto">
           {subscriptionPlans.map((plan, index) => (
-            <Card
-              key={plan.id}
-              className={`divide-y divide-gray-200 plan-card animate-slide-up ${
-                plan.id === 'prod_Rq1DHH7IbFPodY' ? `border-2 border-${plan.color}-500 relative` : ''
-              } ${selectedPlan === plan.id ? 'selected' : ''}`}
-              style={{ animationDelay: `${index * 150}ms` }}
-            >
-              {plan.id === 'prod_Rq1DHH7IbFPodY' && (
-                <div className={`absolute top-0 right-0 -mt-4 -mr-4 bg-${plan.color}-500 rounded-full px-3 py-1 text-white text-xs font-semibold transform rotate-3`}>
-                  おすすめ
+            <div key={index} className="subscription-option">
+              <Card
+                className={`divide-y divide-gray-200 plan-card animate-slide-up ${
+                  plan.id === 'prod_Rq1DHH7IbFPodY' ? `border-2 border-${plan.color}-500 relative` : ''
+                } ${selectedPlan === plan.id ? 'selected' : ''}`}
+                style={{ animationDelay: `${index * 150}ms` }}
+              >
+                {plan.id === 'prod_Rq1DHH7IbFPodY' && (
+                  <div className={`absolute top-0 right-0 -mt-4 -mr-4 bg-${plan.color}-500 rounded-full px-3 py-1 text-white text-xs font-semibold transform rotate-3`}>
+                    おすすめ
+                  </div>
+                )}
+                <div className="p-6">
+                  <h2 className={`text-lg leading-6 font-medium text-${plan.color}-700`}>{plan.name}</h2>
+                  <p className="mt-4 text-sm text-gray-500">{plan.description}</p>
+                  <p className="mt-8">
+                    <span className="text-4xl font-extrabold text-gray-900">¥{plan.price.toLocaleString()}</span>
+                    <span className="text-base font-medium text-gray-500">/月</span>
+                  </p>
+                  <Button
+                    type="button"
+                    onClick={() => handlePlanSelect(plan.id)}
+                    variant={selectedPlan === plan.id ? "primary" : "outline"}
+                    fullWidth
+                    className={`mt-8 btn-hover-effect ${selectedPlan === plan.id ? 'bg-gradient-to-r from-blue-500 to-indigo-600' : ''}`}
+                  >
+                    {selectedPlan === plan.id ? '選択中' : '選択する'}
+                  </Button>
                 </div>
-              )}
-              <div className="p-6">
-                <h2 className={`text-lg leading-6 font-medium text-${plan.color}-700`}>{plan.name}</h2>
-                <p className="mt-4 text-sm text-gray-500">{plan.description}</p>
-                <p className="mt-8">
-                  <span className="text-4xl font-extrabold text-gray-900">¥{plan.price.toLocaleString()}</span>
-                  <span className="text-base font-medium text-gray-500">/月</span>
-                </p>
-                <Button
-                  type="button"
-                  onClick={() => handlePlanSelect(plan.id)}
-                  variant={selectedPlan === plan.id ? "primary" : "outline"}
-                  fullWidth
-                  className={`mt-8 btn-hover-effect ${selectedPlan === plan.id ? 'bg-gradient-to-r from-blue-500 to-indigo-600' : ''}`}
-                >
-                  {selectedPlan === plan.id ? '選択中' : '選択する'}
-                </Button>
-              </div>
-              <div className="pt-6 pb-8 px-6">
-                <h3 className="text-xs font-medium text-gray-900 tracking-wide uppercase">含まれる機能</h3>
-                <ul className="mt-6 space-y-4">
-                  {plan.features.map((feature, index) => (
-                    <li key={index} className="flex items-start">
-                      <svg className={`flex-shrink-0 h-5 w-5 text-${plan.color}-500 mt-0.5`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      <span className="ml-3 text-sm text-gray-500">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </Card>
+                <div className="pt-6 pb-8 px-6">
+                  <h3 className="text-xs font-medium text-gray-900 tracking-wide uppercase">含まれる機能</h3>
+                  <ul className="mt-6 space-y-4">
+                    {plan.features.map((feature, index) => (
+                      <li key={index} className="flex items-start">
+                        <svg className={`flex-shrink-0 h-5 w-5 text-${plan.color}-500 mt-0.5`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        <span className="ml-3 text-sm text-gray-500">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </Card>
+            </div>
           ))}
         </div>
 

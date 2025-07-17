@@ -1,37 +1,61 @@
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import AnnouncementCard from '../components/AnnouncementCard';
-import { Announcement, getLatestAnnouncements } from '../services/announcementService';
-import LoadingSpinner from '../components/LoadingSpinner';
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import AnnouncementCard from "../components/AnnouncementCard";
+import {
+  Announcement,
+  getLatestAnnouncements,
+} from "../services/announcementService";
+import LoadingSpinner from "../components/LoadingSpinner";
+import Loading from "./Loading";
 
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  
+  const [isLoading, setIsLoading] = useState(
+    sessionStorage.getItem("isLoading") === "true"
+  );
+
   // ユーザーが管理者かどうかをチェック（roleが'admin'の場合、または明示的にisAdminがtrueの場合）
-  const isAdmin = user?.role === 'admin' || user?.isAdmin === true;
+  const isAdmin = user?.role === "admin" || user?.isAdmin === true;
+
+  useEffect(() => {
+    if (isLoading) {
+      const timeout = setTimeout(() => {
+        // 1.5秒後にステートをfalseに更新＆セッションストレージを削除
+        setIsLoading(false);
+        sessionStorage.removeItem("isLoading");
+      }, 1500);
+      return () => clearTimeout(timeout);
+    }
+  }, [isLoading]);
 
   useEffect(() => {
     // デバッグログ
-    console.log('現在のユーザー情報:', user);
-    
+    console.log("現在のユーザー情報:", user);
+
     const fetchAnnouncements = async () => {
       try {
         const data = await getLatestAnnouncements(3); // 最新3件を取得
         setAnnouncements(data);
         setLoading(false);
       } catch (err) {
-        console.error('お知らせの取得に失敗しました', err);
-        setError('お知らせの取得に失敗しました');
+        console.error("お知らせの取得に失敗しました", err);
+        setError("お知らせの取得に失敗しました");
         setLoading(false);
       }
     };
 
     fetchAnnouncements();
   }, [user]);
+
+  if (isLoading) {
+    return (
+      <Loading /> // ローディング中のコンポーネントを表示
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -46,7 +70,7 @@ const Dashboard: React.FC = () => {
           </button>
         </div>
       </header>
-      
+
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           {/* お知らせセクション */}
@@ -85,13 +109,15 @@ const Dashboard: React.FC = () => {
               ) : error ? (
                 <p className="text-red-500 text-center">{error}</p>
               ) : announcements.length === 0 ? (
-                <p className="text-gray-500 text-center">現在お知らせはありません</p>
+                <p className="text-gray-500 text-center">
+                  現在お知らせはありません
+                </p>
               ) : (
                 <div>
                   {announcements.map((announcement, index) => (
-                    <AnnouncementCard 
-                      key={announcement.id} 
-                      announcement={announcement} 
+                    <AnnouncementCard
+                      key={announcement.id}
+                      announcement={announcement}
                       isNew={index === 0} // 最新のお知らせには「新着情報」バッジを表示
                     />
                   ))}
@@ -118,26 +144,38 @@ const Dashboard: React.FC = () => {
                   </dd>
                 </div>
                 <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">メールアドレス</dt>
+                  <dt className="text-sm font-medium text-gray-500">
+                    メールアドレス
+                  </dt>
                   <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
                     {user?.email}
                   </dd>
                 </div>
                 <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">学籍番号</dt>
+                  <dt className="text-sm font-medium text-gray-500">
+                    学籍番号
+                  </dt>
                   <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
                     {user?.studentId}
                   </dd>
                 </div>
                 <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">ユーザータイプ</dt>
+                  <dt className="text-sm font-medium text-gray-500">
+                    ユーザータイプ
+                  </dt>
                   <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {user?.role === 'admin' ? '管理者' : user?.role === 'student' ? '学生' : '教師'}
+                    {user?.role === "admin"
+                      ? "管理者"
+                      : user?.role === "student"
+                      ? "学生"
+                      : "教師"}
                   </dd>
                 </div>
                 {isAdmin && (
                   <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                    <dt className="text-sm font-medium text-gray-500">管理者権限</dt>
+                    <dt className="text-sm font-medium text-gray-500">
+                      管理者権限
+                    </dt>
                     <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
                       有効
                     </dd>
@@ -156,9 +194,7 @@ const Dashboard: React.FC = () => {
                     管理者機能
                   </h3>
                   <div className="mt-2 max-w-xl text-sm text-gray-500">
-                    <p>
-                      お知らせの管理と作成
-                    </p>
+                    <p>お知らせの管理と作成</p>
                   </div>
                   <div className="mt-5">
                     <Link
@@ -178,9 +214,7 @@ const Dashboard: React.FC = () => {
                   決済情報
                 </h3>
                 <div className="mt-2 max-w-xl text-sm text-gray-500">
-                  <p>
-                    サブスクリプションと支払い方法の管理
-                  </p>
+                  <p>サブスクリプションと支払い方法の管理</p>
                 </div>
                 <div className="mt-5">
                   <Link
@@ -199,9 +233,7 @@ const Dashboard: React.FC = () => {
                   サブスクリプション
                 </h3>
                 <div className="mt-2 max-w-xl text-sm text-gray-500">
-                  <p>
-                    現在のプランと利用状況
-                  </p>
+                  <p>現在のプランと利用状況</p>
                 </div>
                 <div className="mt-5">
                   <Link
@@ -220,9 +252,7 @@ const Dashboard: React.FC = () => {
                   支払い履歴
                 </h3>
                 <div className="mt-2 max-w-xl text-sm text-gray-500">
-                  <p>
-                    過去の支払い記録と詳細
-                  </p>
+                  <p>過去の支払い記録と詳細</p>
                 </div>
                 <div className="mt-5">
                   <Link
@@ -241,4 +271,4 @@ const Dashboard: React.FC = () => {
   );
 };
 
-export default Dashboard; 
+export default Dashboard;
