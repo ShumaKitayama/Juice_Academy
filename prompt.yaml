@@ -1,0 +1,249 @@
+プロジェクト概要:
+  説明: 大学内で提供するドリンクバーサービスのためのウェブアプリケーション開発
+  目標: ユーザー管理、決済処理、お知らせ機能を中心としたMVP
+
+機能要件:
+  お知らせ機能:
+    概要: 管理者が最新情報や重要なお知らせをユーザーに表示
+    詳細要件:
+      - 管理者用ダッシュボードからお知らせの作成、編集、削除が可能
+      - お知らせはタイトル、内容、作成日、更新日を含む
+      - フロントエンドでお知らせ一覧を表示（最新順にソート）
+      - お知らせはリアルタイムで更新（WebSocket検討）
+
+  ユーザー管理:
+    新規登録:
+      概要: ユーザーがアカウントを作成
+      入力フィールド:
+        - 種族（学年と教職員）
+        - 学籍番号
+        - 名前（ふりがな）
+        - メールアドレス
+      バリデーション:
+        - メールアドレスの形式チェック
+        - 学籍番号の一意性
+        - 必須項目の入力確認
+        - パスワード設定
+
+    ログイン:
+      概要: 既存ユーザーがアカウントにアクセス
+      入力フィールド:
+        - メールアドレス
+        - パスワード
+      認証:
+        - JWTを使用したセッション管理
+        - パスワードのハッシュ化（bcrypt）
+      エラーハンドリング:
+        - 誤った認証情報の提示時のフィードバック
+
+    退会:
+      概要: ユーザーがアカウントを削除
+      詳細要件:
+        - 退会手続きの説明
+        - 確認ダイアログ
+        - アカウント削除時のデータ処理
+
+  決済機能:
+    概要: ユーザーがサービス利用料金を支払う
+    詳細要件:
+      - Stripe APIとの連携
+      - 支払い方法の登録
+      - 支払いの即時処理
+      - 決済ページの設計
+      - 安全なデータ送信（HTTPS）
+      - 決済情報のトークン化
+      - 決済履歴の管理
+      - ユーザー毎の支払い履歴表示
+      - 管理者用決済管理機能
+
+非機能要件:
+  セキュリティ:
+    - データの暗号化
+    - 認証と認可の厳格な管理
+    - 一般的な脆弱性対策
+  
+  ユーザビリティ:
+    - 直感的なUI/UXデザイン
+    - モバイル対応（レスポンシブデザイン）
+  
+  保守性:
+    - コードのドキュメント化
+    - テストの自動化
+
+システムアーキテクチャ:
+  フロントエンド:
+    - React (Vite)
+    - TypeScript
+  
+  バックエンド:
+    - Go + Gin
+    - JWT認証
+  
+  データベース:
+    - MongoDB
+    - インデックス最適化
+  
+  コンテナ化:
+    - Docker
+    - Docker Compose
+
+API仕様:
+  ユーザー関連:
+    登録:
+      path: /api/register
+      method: POST
+      request:
+        role: string
+        student_id: string
+        name_kana: string
+        email: string
+        password: string
+      response:
+        success: 201
+    
+    ログイン:
+      path: /api/login
+      method: POST
+      request:
+        email: string
+        password: string
+      response:
+        success: 200
+        data: JWTトークン
+    
+    アカウント削除:
+      path: /api/account
+      method: DELETE
+      auth: required
+      response:
+        success: 200
+
+  お知らせ関連:
+    一覧取得:
+      path: /api/announcements
+      method: GET
+      response:
+        type: array
+        items:
+          id: string
+          title: string
+          content: string
+          created_at: datetime
+          updated_at: datetime
+
+    作成:
+      path: /api/announcements
+      method: POST
+      auth: admin
+      request:
+        title: string
+        content: string
+      response:
+        success: 201
+
+    編集:
+      path: /api/announcements/{id}
+      method: PUT
+      auth: admin
+      request:
+        title: string
+        content: string
+      response:
+        success: 200
+
+    削除:
+      path: /api/announcements/{id}
+      method: DELETE
+      auth: admin
+      response:
+        success: 200
+
+  決済関連:
+    支払い処理:
+      path: /api/payment
+      method: POST
+      auth: required
+      request:
+        payment_method_id: string
+        amount: number
+      response:
+        success: 200
+
+    履歴取得:
+      path: /api/payment/history
+      method: GET
+      auth: required
+      response:
+        type: array
+        items:
+          id: string
+          amount: number
+          status: string
+          created_at: datetime
+
+データベース設計:
+  Users:
+    fields:
+      _id:
+        type: ObjectId
+        constraints: [自動生成]
+      role:
+        type: String
+        constraints: [必須]
+      student_id:
+        type: String
+        constraints: [必須, ユニーク]
+      name_kana:
+        type: String
+        constraints: [必須]
+      email:
+        type: String
+        constraints: [必須, ユニーク]
+      password_hash:
+        type: String
+        constraints: [必須]
+      created_at:
+        type: Date
+        constraints: [自動設定]
+      updated_at:
+        type: Date
+        constraints: [自動設定]
+
+  Announcements:
+    fields:
+      _id:
+        type: ObjectId
+        constraints: [自動生成]
+      title:
+        type: String
+        constraints: [必須]
+      content:
+        type: String
+        constraints: [必須]
+      created_at:
+        type: Date
+        constraints: [自動設定]
+      updated_at:
+        type: Date
+        constraints: [自動設定]
+
+  Payments:
+    fields:
+      _id:
+        type: ObjectId
+        constraints: [自動生成]
+      user_id:
+        type: ObjectId
+        constraints: [必須]
+      payment_method_id:
+        type: String
+        constraints: [必須]
+      amount:
+        type: Number
+        constraints: [必須]
+      status:
+        type: String
+        constraints: [必須]
+      created_at:
+        type: Date
+        constraints: [自動設定]

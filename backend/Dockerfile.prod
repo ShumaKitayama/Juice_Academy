@@ -1,0 +1,49 @@
+# マルチステージビルドを使用してイメージサイズを最小化
+FROM golang:1.21-alpine AS builder
+
+# セキュリティアップデートとビルドツールをインストール
+RUN apk update && apk add --no-cache git ca-certificates tzdata && update-ca-certificates
+
+WORKDIR /app
+
+# 依存関係をコピーしてダウンロード
+COPY go.mod go.sum ./
+RUN go mod download && go mod verify
+
+# ソースコードをコピー
+COPY . .
+
+# 本番用にビルド（静的リンク、最適化）
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags='-w -s -extldflags "-static"' \
+    -a -installsuffix cgo \
+    -o main .
+
+# 本番用の軽量イメージ
+FROM alpine:latest
+
+# セキュリティアップデートとCA証明書をインストール
+RUN apk --no-cache add ca-certificates tzdata && update-ca-certificates
+
+# 非rootユーザーを作成
+RUN adduser -D -s /bin/sh appuser
+
+WORKDIR /app
+
+# ビルド済みバイナリをコピー
+COPY --from=builder /app/main .
+
+# ログディレクトリを作成
+RUN mkdir -p logs && chown appuser:appuser logs
+
+# 非rootユーザーで実行（セキュリティ強化）
+USER appuser
+
+# ポート8080を公開
+EXPOSE 8080
+
+# ヘルスチェックを追加
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/api/announcements || exit 1
+
+CMD ["./main"]
