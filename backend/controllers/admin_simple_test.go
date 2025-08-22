@@ -150,3 +150,4 @@ func TestBcryptConfiguration(t *testing.T) {
 	assert.Equal(t, "$2", hashedPassword[:2], "bcryptハッシュは$2で始まる必要があります")
 }
 
+
