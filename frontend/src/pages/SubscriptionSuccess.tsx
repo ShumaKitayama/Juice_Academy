@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import Button from '../components/Button';
-import SuccessAlert from '../components/SuccessAlert';
-import LoadingSpinner from '../components/LoadingSpinner';
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import Button from "../components/Button";
+import LoadingSpinner from "../components/LoadingSpinner";
+import SuccessAlert from "../components/SuccessAlert";
 
 const SubscriptionSuccess: React.FC = () => {
   const [loading, setLoading] = useState(true);
-  const [searchParams] = useSearchParams();
-  const sessionId = searchParams.get('session_id'); // 後方互換性のため残しておく
+  // const [searchParams] = useSearchParams();
+  // const sessionId = searchParams.get('session_id'); // 後方互換性のため残しておく
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,7 +20,7 @@ const SubscriptionSuccess: React.FC = () => {
   }, []);
 
   const handleGoToDashboard = () => {
-    navigate('/dashboard');
+    navigate("/dashboard");
   };
 
   if (loading) {
@@ -28,7 +28,9 @@ const SubscriptionSuccess: React.FC = () => {
       <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8 text-center">
           <LoadingSpinner size="large" />
-          <p className="mt-4 text-lg text-gray-600">サブスクリプション情報を確認中...</p>
+          <p className="mt-4 text-lg text-gray-600">
+            サブスクリプション情報を確認中...
+          </p>
         </div>
       </div>
     );
@@ -46,9 +48,9 @@ const SubscriptionSuccess: React.FC = () => {
           </p>
         </div>
 
-        <SuccessAlert 
-          title="登録完了" 
-          message="サブスクリプションが正常に登録されました。ダッシュボードからコンテンツにアクセスできます。" 
+        <SuccessAlert
+          title="登録完了"
+          message="サブスクリプションが正常に登録されました。ダッシュボードからコンテンツにアクセスできます。"
           className="animate-slide-up"
         />
 
@@ -67,4 +69,4 @@ const SubscriptionSuccess: React.FC = () => {
   );
 };
 
-export default SubscriptionSuccess; 
+export default SubscriptionSuccess;

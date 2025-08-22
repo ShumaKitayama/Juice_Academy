@@ -1,21 +1,26 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { Announcement, getAnnouncementById, updateAnnouncement, deleteAnnouncement } from '../services/announcementService';
-import Button from '../components/Button';
-import ErrorAlert from '../components/ErrorAlert';
-import SuccessAlert from '../components/SuccessAlert';
-import LoadingSpinner from '../components/LoadingSpinner';
+import React, { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import Button from "../components/Button";
+import ErrorAlert from "../components/ErrorAlert";
+import LoadingSpinner from "../components/LoadingSpinner";
+import SuccessAlert from "../components/SuccessAlert";
+import { useAuth } from "../hooks/useAuth";
+import {
+  Announcement,
+  deleteAnnouncement,
+  getAnnouncementById,
+  updateAnnouncement,
+} from "../services/announcementService";
 
-type ActionType = 'update' | 'delete' | null;
+type ActionType = "update" | "delete" | null;
 
 const AdminAnnouncementEdit: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
-  const [title, setTitle] = useState<string>('');
-  const [content, setContent] = useState<string>('');
+  const [title, setTitle] = useState<string>("");
+  const [content, setContent] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,14 +30,14 @@ const AdminAnnouncementEdit: React.FC = () => {
 
   useEffect(() => {
     // 管理者権限チェック
-    if (!user || user.role !== 'admin') {
-      navigate('/');
+    if (!user || user.role !== "admin") {
+      navigate("/");
       return;
     }
 
     const fetchAnnouncement = async () => {
       if (!id) {
-        setError('お知らせIDが不正です');
+        setError("お知らせIDが不正です");
         setLoading(false);
         return;
       }
@@ -44,8 +49,8 @@ const AdminAnnouncementEdit: React.FC = () => {
         setContent(data.content);
         setLoading(false);
       } catch (err) {
-        console.error('お知らせの取得に失敗しました', err);
-        setError('お知らせの取得に失敗しました');
+        console.error("お知らせの取得に失敗しました", err);
+        setError("お知らせの取得に失敗しました");
         setLoading(false);
       }
     };
@@ -60,13 +65,13 @@ const AdminAnnouncementEdit: React.FC = () => {
 
     // 入力チェック
     if (!title.trim()) {
-      setError('タイトルを入力してください');
+      setError("タイトルを入力してください");
       setSubmitting(false);
       return;
     }
 
     if (!content.trim()) {
-      setError('内容を入力してください');
+      setError("内容を入力してください");
       setSubmitting(false);
       return;
     }
@@ -74,26 +79,26 @@ const AdminAnnouncementEdit: React.FC = () => {
     try {
       // トークンが自動的に使用されるようになったため、このチェックは不要になりました
       // ただし、ログイン状態のチェックとして残しておくこともできます
-      if (!localStorage.getItem('token')) {
-        throw new Error('認証情報が見つかりません');
+      if (!localStorage.getItem("token")) {
+        throw new Error("認証情報が見つかりません");
       }
 
       if (!id) {
-        throw new Error('お知らせIDが不正です');
+        throw new Error("お知らせIDが不正です");
       }
 
       await updateAnnouncement(id, { title, content });
       setSuccess(true);
-      setCompletedAction('update');
+      setCompletedAction("update");
       setSubmitting(false);
 
       // 3秒後に一覧ページへリダイレクト
       setTimeout(() => {
-        navigate('/admin/announcements');
+        navigate("/admin/announcements");
       }, 3000);
     } catch (err) {
-      console.error('お知らせの更新に失敗しました', err);
-      setError('お知らせの更新に失敗しました');
+      console.error("お知らせの更新に失敗しました", err);
+      setError("お知らせの更新に失敗しました");
       setSubmitting(false);
     }
   };
@@ -105,32 +110,32 @@ const AdminAnnouncementEdit: React.FC = () => {
     try {
       // トークンが自動的に使用されるようになったため、このチェックは不要になりました
       // ただし、ログイン状態のチェックとして残しておくこともできます
-      if (!localStorage.getItem('token')) {
-        throw new Error('認証情報が見つかりません');
+      if (!localStorage.getItem("token")) {
+        throw new Error("認証情報が見つかりません");
       }
 
       if (!id) {
-        throw new Error('お知らせIDが不正です');
+        throw new Error("お知らせIDが不正です");
       }
 
       await deleteAnnouncement(id);
       setSuccess(true);
-      setCompletedAction('delete');
+      setCompletedAction("delete");
       setSubmitting(false);
 
       // 3秒後に一覧ページへリダイレクト
       setTimeout(() => {
-        navigate('/admin/announcements');
+        navigate("/admin/announcements");
       }, 3000);
     } catch (err) {
-      console.error('お知らせの削除に失敗しました', err);
-      setError('お知らせの削除に失敗しました');
+      console.error("お知らせの削除に失敗しました", err);
+      setError("お知らせの削除に失敗しました");
       setSubmitting(false);
     }
   };
 
   const handleCancel = () => {
-    navigate('/admin/announcements');
+    navigate("/admin/announcements");
   };
 
   if (loading) {
@@ -147,11 +152,7 @@ const AdminAnnouncementEdit: React.FC = () => {
         <div className="max-w-3xl mx-auto">
           <ErrorAlert message={error} />
           <div className="mt-6 text-center">
-            <Button
-              onClick={handleCancel}
-              variant="outline"
-              size="medium"
-            >
+            <Button onClick={handleCancel} variant="outline" size="medium">
               戻る
             </Button>
           </div>
@@ -189,20 +190,22 @@ const AdminAnnouncementEdit: React.FC = () => {
 
         {error && <ErrorAlert message={error} className="mb-4" />}
         {success && (
-          <SuccessAlert 
-            title="成功" 
+          <SuccessAlert
+            title="成功"
             message={
-              completedAction === 'update' 
-                ? "お知らせを更新しました。リダイレクトします..." 
+              completedAction === "update"
+                ? "お知らせを更新しました。リダイレクトします..."
                 : "お知らせを削除しました。リダイレクトします..."
             }
-            className="mb-4" 
+            className="mb-4"
           />
         )}
 
         {showDeleteConfirm && !success ? (
           <div className="bg-red-50 border border-red-100 rounded-lg p-6 mb-6">
-            <h2 className="text-lg font-medium text-red-800 mb-2">お知らせを削除しますか？</h2>
+            <h2 className="text-lg font-medium text-red-800 mb-2">
+              お知らせを削除しますか？
+            </h2>
             <p className="text-red-700 mb-4">この操作は取り消せません。</p>
             <div className="flex justify-end space-x-3">
               <Button
@@ -230,7 +233,10 @@ const AdminAnnouncementEdit: React.FC = () => {
           <div className="bg-white shadow overflow-hidden sm:rounded-lg">
             <form onSubmit={handleSubmit} className="p-6">
               <div className="mb-6">
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="title"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   タイトル
                 </label>
                 <input
@@ -246,7 +252,10 @@ const AdminAnnouncementEdit: React.FC = () => {
               </div>
 
               <div className="mb-6">
-                <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="content"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   内容
                 </label>
                 <textarea
@@ -275,7 +284,7 @@ const AdminAnnouncementEdit: React.FC = () => {
                   variant="primary"
                   size="medium"
                   type="submit"
-                  isLoading={submitting && completedAction !== 'delete'}
+                  isLoading={submitting && completedAction !== "delete"}
                   disabled={submitting || showDeleteConfirm}
                 >
                   更新する
@@ -289,4 +298,4 @@ const AdminAnnouncementEdit: React.FC = () => {
   );
 };
 
-export default AdminAnnouncementEdit; 
+export default AdminAnnouncementEdit;

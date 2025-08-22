@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authAPI } from '../services/api';
+import React, { createContext, ReactNode, useEffect, useState } from "react";
+import { authAPI } from "../services/api";
 
 // ユーザー型定義
 interface User {
@@ -8,7 +8,22 @@ interface User {
   role: string;
   studentId: string;
   nameKana: string;
-  isAdmin?: boolean;  // 管理者フラグを追加
+  isAdmin?: boolean; // 管理者フラグを追加
+  // Profile.tsxで使用される追加プロパティ
+  name?: string;
+  phone?: string;
+  schoolName?: string;
+  position?: string;
+  schoolAddress?: string;
+}
+
+// エラー型定義
+interface ApiError {
+  response?: {
+    data?: {
+      error?: string;
+    };
+  };
 }
 
 // 認証コンテキストの型定義
@@ -32,7 +47,9 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // 認証プロバイダーコンポーネント
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +65,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setIsAuthenticated(true);
         }
       } catch (err) {
-        console.error('認証状態の確認中にエラーが発生しました', err);
+        console.error("認証状態の確認中にエラーが発生しました", err);
       } finally {
         setLoading(false);
       }
@@ -65,8 +82,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const response = await authAPI.login({ email, password });
       setUser(response.data.user);
       setIsAuthenticated(true);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'ログインに失敗しました');
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.response?.data?.error || "ログインに失敗しました");
       throw err;
     } finally {
       setLoading(false);
@@ -85,8 +103,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setError(null);
     try {
       await authAPI.register(userData);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'ユーザー登録に失敗しました');
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.response?.data?.error || "ユーザー登録に失敗しました");
       throw err;
     } finally {
       setLoading(false);
@@ -114,13 +133,4 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-// 認証コンテキストを使用するためのフック
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
-
-export default AuthContext; 
+export default AuthContext;
