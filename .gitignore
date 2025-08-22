@@ -8,13 +8,13 @@ build/
 */dist/
 */build/
 
-# 環境変数ファイル
+# 環境変数ファイル（実際の機密情報を含むファイル）
 .env
 .env.local
 .env.production
 .env.development
 .env.test
-.env.example
+# .env.exampleはテンプレートファイルなので共有OK
 
 # ログファイル
 logs/
