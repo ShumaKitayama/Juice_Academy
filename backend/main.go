@@ -19,7 +19,6 @@ func main() {
 
 	// 環境変数から設定を取得
 	mongoURI := getEnv("MONGODB_URI", "mongodb://mongodb:27017")
-	frontendURL := getEnv("FRONTEND_URL", "http://localhost:3000")
 	corsAllowedOrigins := getEnv("CORS_ALLOWED_ORIGINS", "*")
 	port := getEnv("APP_PORT", "8080")
 
