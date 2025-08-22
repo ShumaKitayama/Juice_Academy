@@ -1,7 +1,10 @@
 import axios from "axios";
 
-// APIのベースURL
-const API_URL = "http://localhost:8080/api";
+// 環境に応じたAPIのベースURL
+const API_URL = import.meta.env.VITE_API_URL || 
+  (import.meta.env.MODE === 'production' 
+    ? `${window.location.origin}/api` 
+    : "http://localhost:8080/api");
 
 // Axiosインスタンスの作成
 export const api = axios.create({
@@ -9,6 +12,7 @@ export const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  timeout: 10000, // 10秒タイムアウト
 });
 
 // リクエストインターセプター
@@ -16,16 +20,20 @@ api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
     if (token) {
-      // トークンの形式を確認
-      console.log("送信するトークン (抜粋):", token.substring(0, 20) + "...");
+      // 本番環境ではコンソールログを無効化
+      if (import.meta.env.MODE !== 'production') {
+        console.log("送信するトークン (抜粋):", token.substring(0, 20) + "...");
+      }
 
       // Authorization ヘッダーを正しく設定
       config.headers.Authorization = `Bearer ${token}`;
 
-      // ヘッダーが正しく設定されたか確認
-      console.log("リクエストヘッダー:", config.headers);
-      console.log("リクエストURL:", config.url);
-    } else {
+      // 本番環境ではデバッグログを無効化
+      if (import.meta.env.MODE !== 'production') {
+        console.log("リクエストヘッダー:", config.headers);
+        console.log("リクエストURL:", config.url);
+      }
+    } else if (import.meta.env.MODE !== 'production') {
       console.warn("トークンがありません - 認証なしでリクエストを送信します");
     }
     return config;
@@ -41,12 +49,14 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    // デバッグ情報：エラーの詳細をコンソールに出力
-    console.error("APIエラー発生:", {
-      status: error.response?.status,
-      url: error.config?.url,
-      data: error.response?.data,
-    });
+    // 本番環境では詳細なエラーログを制限
+    if (import.meta.env.MODE !== 'production') {
+      console.error("APIエラー発生:", {
+        status: error.response?.status,
+        url: error.config?.url,
+        data: error.response?.data,
+      });
+    }
 
     // 管理者APIへのリクエストかどうかをチェック
     const isAdminRequest =
@@ -59,13 +69,17 @@ api.interceptors.response.use(
         isAdminRequest &&
         (error.response.status === 401 || error.response.status === 403)
       ) {
-        console.error("管理者権限に関するエラー:", error.response.data);
+        if (import.meta.env.MODE !== 'production') {
+          console.error("管理者権限に関するエラー:", error.response.data);
+        }
         return Promise.reject(error);
       }
 
       // それ以外の認証エラー(401)の場合、ログアウト処理
       if (error.response.status === 401) {
-        console.log("認証エラーのためログアウトします");
+        if (import.meta.env.MODE !== 'production') {
+          console.log("認証エラーのためログアウトします");
+        }
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         window.location.href = "/login";

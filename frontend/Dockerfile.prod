@@ -1,0 +1,52 @@
+# マルチステージビルド
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+
+# パッケージファイルをコピー
+COPY package*.json ./
+
+# 依存関係をインストール（本番用のみ）
+RUN npm ci --only=production --silent
+
+# 開発用依存関係も一時的にインストール（ビルドに必要）
+RUN npm ci --silent
+
+# ソースコードをコピー
+COPY . .
+
+# 本番用ビルド
+RUN npm run build
+
+# Nginx本番環境
+FROM nginx:alpine
+
+# 不要なファイルを削除
+RUN rm -rf /usr/share/nginx/html/*
+
+# ビルド済みファイルをコピー
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Nginx設定をコピー
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# 非rootユーザーで実行するための設定
+RUN adduser -D -s /bin/sh nginxuser && \
+    chown -R nginxuser:nginxuser /var/cache/nginx && \
+    chown -R nginxuser:nginxuser /var/log/nginx && \
+    chown -R nginxuser:nginxuser /etc/nginx/conf.d && \
+    touch /var/run/nginx.pid && \
+    chown -R nginxuser:nginxuser /var/run/nginx.pid && \
+    chown -R nginxuser:nginxuser /usr/share/nginx/html
+
+# ポートを公開
+EXPOSE 80 443
+
+# ヘルスチェックを追加
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost/ || exit 1
+
+# 非rootユーザーで実行
+USER nginxuser
+
+CMD ["nginx", "-g", "daemon off;"]

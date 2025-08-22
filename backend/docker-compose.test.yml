@@ -1,0 +1,28 @@
+version: "3.8"
+
+services:
+  mongodb-test:
+    image: mongo:7.0
+    container_name: juice_academy_mongodb_test
+    ports:
+      - "27018:27017" # テスト用に別ポートを使用
+    environment:
+      - MONGO_INITDB_DATABASE=juice_academy_test
+    volumes:
+      - mongodb_test_data:/data/db
+    networks:
+      - test_network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  mongodb_test_data:
+    driver: local
+
+networks:
+  test_network:
+    driver: bridge

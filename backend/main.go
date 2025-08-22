@@ -4,16 +4,29 @@ import (
 	"juice_academy_backend/config"
 	"juice_academy_backend/controllers"
 	"juice_academy_backend/middleware"
+	"log"
+	"os"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	// MongoDB への接続（Docker Compose の mongodb サービスを利用）
-	dbClient := config.ConnectDB("mongodb://mongodb:27017")
+	// 本番環境では詳細ログを無効化
+	if os.Getenv("APP_ENV") == "production" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
+	// 環境変数から設定を取得
+	mongoURI := getEnv("MONGODB_URI", "mongodb://mongodb:27017")
+	corsAllowedOrigins := getEnv("CORS_ALLOWED_ORIGINS", "*")
+	port := getEnv("APP_PORT", "8080")
+
+	// MongoDB への接続
+	dbClient := config.ConnectDB(mongoURI)
 
 	// データベース参照
-	db := dbClient.Database("juice_academy")
+	db := dbClient.Database(getEnv("MONGODB_DATABASE", "juice_academy"))
 
 	// コレクションの初期化
 	controllers.InitUserCollection(dbClient)
@@ -22,14 +35,39 @@ func main() {
 	controllers.InitAnnouncementCollection(db) // お知らせコレクションの初期化を追加
 	middleware.InitUserCollection(db)
 
-	// 管理者ユーザーの作成
-	controllers.SeedAdminUser(db)
+	// 管理者ユーザーの作成（本番環境では初回のみ、または環境変数で制御）
+	if os.Getenv("APP_ENV") != "production" || os.Getenv("SEED_ADMIN_USER") == "true" {
+		controllers.SeedAdminUser(db)
+	}
 
 	router := gin.Default()
 
-	// CORS設定の追加
+	// 本番環境向けCORS設定
 	router.Use(func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		origin := c.Request.Header.Get("Origin")
+		
+		// 本番環境では特定のオリジンのみ許可
+		if os.Getenv("APP_ENV") == "production" {
+			allowedOrigins := strings.Split(corsAllowedOrigins, ",")
+			originAllowed := false
+			for _, allowedOrigin := range allowedOrigins {
+				if origin == strings.TrimSpace(allowedOrigin) {
+					c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+					originAllowed = true
+					break
+				}
+			}
+			// 許可されていないオリジンの場合はデフォルト値を設定しない
+			if !originAllowed && corsAllowedOrigins != "*" {
+				// オリジンが許可されていない場合はCORSヘッダーを設定しない
+			} else if corsAllowedOrigins == "*" {
+				c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+			}
+		} else {
+			// 開発環境では全てのオリジンを許可
+			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		}
+
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
@@ -39,6 +77,17 @@ func main() {
 			return
 		}
 
+		c.Next()
+	})
+
+	// セキュリティヘッダーの追加
+	router.Use(func(c *gin.Context) {
+		c.Writer.Header().Set("X-Content-Type-Options", "nosniff")
+		c.Writer.Header().Set("X-Frame-Options", "DENY")
+		c.Writer.Header().Set("X-XSS-Protection", "1; mode=block")
+		if os.Getenv("APP_ENV") == "production" {
+			c.Writer.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+		}
 		c.Next()
 	})
 
@@ -93,5 +142,14 @@ func main() {
 		adminRoutes.PUT("/users/:id/admin", controllers.SetAdminStatus)
 	}
 
-	router.Run(":8080")
+	log.Printf("サーバーをポート %s で起動します", port)
+	router.Run(":" + port)
+}
+
+// 環境変数を取得するヘルパー関数
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }
