@@ -230,7 +230,7 @@ func LogoutHandler(c *gin.Context) {
 		if expUnix, ok := expClaim.(float64); ok {
 			expTime := time.Unix(int64(expUnix), 0)
 			if expTime.After(time.Now()) {
-				expiration = expTime.Sub(time.Now())
+				expiration = time.Until(expTime)
 			}
 		}
 	}
