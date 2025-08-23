@@ -4,6 +4,7 @@ import (
 	"juice_academy_backend/config"
 	"juice_academy_backend/controllers"
 	"juice_academy_backend/middleware"
+	"juice_academy_backend/services"
 	"log"
 	"os"
 	"strings"
@@ -28,11 +29,19 @@ func main() {
 	// データベース参照
 	db := dbClient.Database(getEnv("MONGODB_DATABASE", "juice_academy"))
 
+	// Redis への接続
+	err := services.InitRedis()
+	if err != nil {
+		log.Printf("Redis接続に失敗しました（継続実行）: %v", err)
+		// Redisが利用できない場合でもサーバーは起動する
+	}
+
 	// コレクションの初期化
 	controllers.InitUserCollection(dbClient)
 	controllers.InitPaymentCollection(dbClient)
 	controllers.InitSubscriptionCollection(dbClient)
 	controllers.InitAnnouncementCollection(db) // お知らせコレクションの初期化を追加
+	controllers.InitOTPCollection(db) // OTPコレクションの初期化を追加
 	middleware.InitUserCollection(db)
 
 	// 管理者ユーザーの作成（本番環境では初回のみ、または環境変数で制御）
@@ -96,8 +105,14 @@ func main() {
 	{
 		api.POST("/register", controllers.RegisterHandler)
 		api.POST("/login", controllers.LoginHandler)
+		api.POST("/login-2fa", controllers.Login2FAHandler) // 2FA用ログイン
 		api.GET("/announcements", controllers.GetAnnouncementsHandler)
 		api.GET("/announcements/:id", controllers.GetAnnouncementByIdHandler)
+
+		// 2FA関連のエンドポイント
+		api.POST("/otp/send", controllers.SendOTPHandler)
+		api.POST("/otp/verify", controllers.VerifyOTPHandler)
+		api.POST("/otp/resend", controllers.ResendOTPHandler)
 
 		// Stripe決済情報登録のためのエンドポイント（フロントエンドからのアクセス用）
 		api.POST("/payment/setup-intent", controllers.SetupIntentHandler)
@@ -111,6 +126,7 @@ func main() {
 	protected := api.Group("/")
 	protected.Use(middleware.JWTAuthMiddleware())
 	{
+		protected.POST("/logout", controllers.LogoutHandler)
 		protected.DELETE("/account", controllers.DeleteAccountHandler)
 
 		// お知らせ管理（管理者のみ）

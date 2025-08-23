@@ -3,7 +3,7 @@ package controllers
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -599,7 +599,7 @@ func DeletePaymentMethodHandler(c *gin.Context) {
 // StripeWebhookHandler はStripeからのWebhookイベントを処理するハンドラ
 func StripeWebhookHandler(c *gin.Context) {
 	// リクエストボディを読み込む
-	body, err := ioutil.ReadAll(c.Request.Body)
+	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "リクエストボディの読み込みに失敗しました"})
 		return

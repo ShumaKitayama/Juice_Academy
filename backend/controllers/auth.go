@@ -3,11 +3,14 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"juice_academy_backend/services"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -15,9 +18,17 @@ import (
 )
 
 var (
-	jwtSecret      = []byte("your_secret_key")
+	jwtSecret      []byte
 	userCollection *mongo.Collection
 )
+
+func init() {
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		panic("JWT_SECRET environment variable is required")
+	}
+	jwtSecret = []byte(secret)
+}
 
 // User はMongoDBのusersコレクションのドキュメント構造
 type User struct {
@@ -122,13 +133,19 @@ func LoginHandler(c *gin.Context) {
 		return
 	}
 
+	// 一意のJWT IDを生成
+	jti := uuid.New().String()
+	expiry := time.Now().Add(time.Hour * 72)
+	
 	// JWT生成
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"jti":     jti,
 		"user_id": user.ID.Hex(),
 		"email":   user.Email,
 		"role":    user.Role,
 		"isAdmin": user.IsAdmin,
-		"exp":     time.Now().Add(time.Hour * 72).Unix(),
+		"iat":     time.Now().Unix(),
+		"exp":     expiry.Unix(),
 	})
 
 	tokenString, err := token.SignedString(jwtSecret)
@@ -152,4 +169,78 @@ func LoginHandler(c *gin.Context) {
 			"isAdmin":   user.IsAdmin,
 		},
 	})
+}
+
+// Login2FAHandler は2段階認証付きログインの第1段階（パスワード検証のみ）を行うハンドラ
+func Login2FAHandler(c *gin.Context) {
+	var req struct {
+		Email    string `json:"email" binding:"required,email"`
+		Password string `json:"password" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "不正な入力データです"})
+		return
+	}
+
+	var user User
+	ctx := context.Background()
+	err := userCollection.FindOne(ctx, bson.M{"email": req.Email}).Decode(&user)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "メールアドレスまたはパスワードが正しくありません"})
+		return
+	}
+
+	// パスワード検証
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "メールアドレスまたはパスワードが正しくありません"})
+		return
+	}
+
+	// パスワード認証成功 - OTPを送信する必要があることを通知
+	c.JSON(http.StatusOK, gin.H{
+		"message": "パスワード認証が完了しました。2段階認証を開始してください。",
+		"require_2fa": true,
+		"email": user.Email,
+	})
+}
+
+// LogoutHandler はログアウト処理とJWTの無効化を行うハンドラ
+func LogoutHandler(c *gin.Context) {
+	// JWTからjtiを取得
+	jti, exists := c.Get("jti")
+	if !exists {
+		// jtiが存在しない場合でもログアウトは成功とする
+		c.JSON(http.StatusOK, gin.H{"message": "ログアウトしました"})
+		return
+	}
+
+	jtiStr, ok := jti.(string)
+	if !ok {
+		c.JSON(http.StatusOK, gin.H{"message": "ログアウトしました"})
+		return
+	}
+
+	// トークンをブラックリストに追加
+	// 有効期限までの残り時間を計算
+	expClaim, expExists := c.Get("exp")
+	var expiration time.Duration = 72 * time.Hour // デフォルト値
+	
+	if expExists {
+		if expUnix, ok := expClaim.(float64); ok {
+			expTime := time.Unix(int64(expUnix), 0)
+			if expTime.After(time.Now()) {
+				expiration = expTime.Sub(time.Now())
+			}
+		}
+	}
+
+	err := services.BlacklistToken(jtiStr, expiration)
+	if err != nil {
+		fmt.Printf("トークンのブラックリスト登録エラー: %v\n", err)
+		// エラーが発生してもログアウトは成功とする
+	}
+
+	fmt.Printf("ログアウト成功: jti=%s\n", jtiStr)
+	c.JSON(http.StatusOK, gin.H{"message": "ログアウトしました"})
 }
