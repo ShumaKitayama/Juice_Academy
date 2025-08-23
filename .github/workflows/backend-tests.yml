@@ -80,13 +80,39 @@ jobs:
           go test -v ./controllers -run "TestBasic.*OTP.*Handler"
           go test -v ./middleware
 
+      - name: Install MongoDB tools
+        run: |
+          echo "📦 MongoDB CLIツール（mongosh）をインストール中..."
+          # MongoDB公式リポジトリを追加
+          curl -fsSL https://pgp.mongodb.com/server-7.0.asc | sudo gpg -o /usr/share/keyrings/mongodb-server-7.0.gpg --dearmor
+          echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+
+          # パッケージリストを更新してmongoshをインストール
+          sudo apt-get update
+          sudo apt-get install -y mongodb-mongosh
+
+          # インストール確認
+          mongosh --version
+          echo "✅ mongoshのインストールが完了しました"
+
+      - name: Install Redis tools
+        run: |
+          echo "📦 Redis CLIツールをインストール中..."
+          sudo apt-get update
+          sudo apt-get install -y redis-tools netcat
+
+          # インストール確認
+          redis-cli --version
+          nc -h | head -1 || echo "netcat installed"
+          echo "✅ redis-cliとnetcatのインストールが完了しました"
+
       - name: Wait for MongoDB
         run: |
           echo "⏳ MongoDBの準備完了を待機中..."
           max_retries=60
           retry_count=0
           connected=false
-          
+
           while [ $retry_count -lt $max_retries ]; do
             retry_count=$((retry_count + 1))
             echo "MongoDB接続試行 $retry_count/$max_retries..."
@@ -100,9 +126,20 @@ jobs:
             
             if [ $retry_count -eq $max_retries ]; then
               echo "❌ MongoDBの準備がタイムアウトしました ($((max_retries * 3))秒経過)"
-              echo "MongoDB接続情報をデバッグ中..."
-              docker ps -a | grep mongo || echo "MongoDBコンテナが見つかりません"
+              echo "🔍 MongoDB接続情報をデバッグ中..."
+              
+              # サービスコンテナの状況確認
+              echo "GitHub Actions Servicesの状況:"
+              docker ps -a | head -10
+              
+              # ポート接続確認
+              echo "ポート27018の接続確認:"
+              nc -z localhost 27018 && echo "ポート27018は開いています" || echo "ポート27018に接続できません"
+              
+              # MongoDB接続テスト
+              echo "MongoDB接続テスト:"
               mongosh --host localhost:27018 --eval "db.adminCommand('ping')" || echo "MongoDB接続に失敗"
+              
               exit 1
             fi
             
@@ -114,7 +151,7 @@ jobs:
           echo "⏳ Redisの準備完了を待機中..."
           max_retries=30
           retry_count=0
-          
+
           while [ $retry_count -lt $max_retries ]; do
             retry_count=$((retry_count + 1))
             echo "Redis接続試行 $retry_count/$max_retries..."
@@ -126,8 +163,16 @@ jobs:
             
             if [ $retry_count -eq $max_retries ]; then
               echo "❌ Redisの準備がタイムアウトしました"
-              echo "Redis接続情報をデバッグ中..."
+              echo "🔍 Redis接続情報をデバッグ中..."
+              
+              # ポート接続確認
+              echo "ポート6380の接続確認:"
+              nc -z localhost 6380 && echo "ポート6380は開いています" || echo "ポート6380に接続できません"
+              
+              # Redis接続テスト
+              echo "Redis接続テスト:"
               redis-cli -h localhost -p 6380 ping || echo "Redis接続に失敗"
+              
               exit 1
             fi
             
