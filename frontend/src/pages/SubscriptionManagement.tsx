@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { paymentAPI } from '../services/api';
-import Button from '../components/Button';
-import Card from '../components/Card';
-import LoadingSpinner from '../components/LoadingSpinner';
-import ErrorAlert from '../components/ErrorAlert';
-import SuccessAlert from '../components/SuccessAlert';
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import Button from "../components/Button";
+import Card from "../components/Card";
+import ErrorAlert from "../components/ErrorAlert";
+import LoadingSpinner from "../components/LoadingSpinner";
+import SuccessAlert from "../components/SuccessAlert";
+import { paymentAPI } from "../services/api";
 
 // サブスクリプション情報の型定義
 interface Subscription {
@@ -22,7 +22,7 @@ const SubscriptionManagement: React.FC = () => {
   const [cancelLoading, setCancelLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  
+
   const navigate = useNavigate();
 
   // サブスクリプション情報を取得
@@ -31,8 +31,18 @@ const SubscriptionManagement: React.FC = () => {
       try {
         const response = await paymentAPI.getSubscriptionStatus();
         setSubscription(response.data.subscription);
-      } catch (err: any) {
-        setError(err.response?.data?.error || 'サブスクリプション情報の取得に失敗しました');
+      } catch (err: unknown) {
+        if (typeof err === "object" && err !== null && "response" in err) {
+          const errorWithResponse = err as {
+            response?: { data?: { error?: string } };
+          };
+          setError(
+            errorWithResponse.response?.data?.error ||
+              "サブスクリプション情報の取得に失敗しました"
+          );
+        } else {
+          setError("サブスクリプション情報の取得に失敗しました");
+        }
       } finally {
         setLoading(false);
       }
@@ -44,24 +54,24 @@ const SubscriptionManagement: React.FC = () => {
   // サブスクリプションのステータスを日本語に変換
   const getStatusText = (status: string, cancelAtPeriodEnd: boolean) => {
     if (cancelAtPeriodEnd) {
-      return '次回更新時に終了予定';
+      return "次回更新時に終了予定";
     }
 
     switch (status) {
-      case 'active':
-        return '有効';
-      case 'canceled':
-        return 'キャンセル済み';
-      case 'incomplete':
-        return '未完了';
-      case 'incomplete_expired':
-        return '期限切れ';
-      case 'past_due':
-        return '支払い遅延';
-      case 'trialing':
-        return 'トライアル中';
-      case 'unpaid':
-        return '未払い';
+      case "active":
+        return "有効";
+      case "canceled":
+        return "キャンセル済み";
+      case "incomplete":
+        return "未完了";
+      case "incomplete_expired":
+        return "期限切れ";
+      case "past_due":
+        return "支払い遅延";
+      case "trialing":
+        return "トライアル中";
+      case "unpaid":
+        return "未払い";
       default:
         return status;
     }
@@ -70,16 +80,20 @@ const SubscriptionManagement: React.FC = () => {
   // 次回請求日をフォーマット
   const formatNextBillingDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('ja-JP', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    return date.toLocaleDateString("ja-JP", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
   // サブスクリプションをキャンセル
   const handleCancelSubscription = async () => {
-    if (!window.confirm('サブスクリプションをキャンセルしますか？次回更新時に終了します。')) {
+    if (
+      !window.confirm(
+        "サブスクリプションをキャンセルしますか？次回更新時に終了します。"
+      )
+    ) {
       return;
     }
 
@@ -89,17 +103,27 @@ const SubscriptionManagement: React.FC = () => {
 
     try {
       await paymentAPI.cancelSubscription();
-      setSuccess('サブスクリプションは次回更新時にキャンセルされます');
-      
+      setSuccess("サブスクリプションは次回更新時にキャンセルされます");
+
       // サブスクリプション情報を更新
       if (subscription) {
         setSubscription({
           ...subscription,
-          cancel_at_period_end: true
+          cancel_at_period_end: true,
         });
       }
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'サブスクリプションのキャンセルに失敗しました');
+    } catch (err: unknown) {
+      if (typeof err === "object" && err !== null && "response" in err) {
+        const errorWithResponse = err as {
+          response?: { data?: { error?: string } };
+        };
+        setError(
+          errorWithResponse.response?.data?.error ||
+            "サブスクリプションのキャンセルに失敗しました"
+        );
+      } else {
+        setError("サブスクリプションのキャンセルに失敗しました");
+      }
     } finally {
       setCancelLoading(false);
     }
@@ -110,7 +134,9 @@ const SubscriptionManagement: React.FC = () => {
       <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8 text-center">
           <LoadingSpinner size="large" />
-          <p className="mt-4 text-lg text-gray-600">サブスクリプション情報を読み込み中...</p>
+          <p className="mt-4 text-lg text-gray-600">
+            サブスクリプション情報を読み込み中...
+          </p>
         </div>
       </div>
     );
@@ -128,52 +154,72 @@ const SubscriptionManagement: React.FC = () => {
           </p>
         </div>
 
-        {error && <ErrorAlert message={error} className="animate-slide-up mb-6" />}
-        {success && <SuccessAlert title="成功" message={success} className="animate-slide-up mb-6" />}
+        {error && (
+          <ErrorAlert message={error} className="animate-slide-up mb-6" />
+        )}
+        {success && (
+          <SuccessAlert
+            title="成功"
+            message={success}
+            className="animate-slide-up mb-6"
+          />
+        )}
 
         {subscription ? (
           <Card className="divide-y divide-gray-200 animate-slide-up">
             <div className="p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">サブスクリプション情報</h2>
-              
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                サブスクリプション情報
+              </h2>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm font-medium text-gray-500">ステータス</p>
+                  <p className="text-sm font-medium text-gray-500">
+                    ステータス
+                  </p>
                   <p className="mt-1 text-lg font-semibold text-gray-900">
-                    {getStatusText(subscription.status, subscription.cancel_at_period_end)}
+                    {getStatusText(
+                      subscription.status,
+                      subscription.cancel_at_period_end
+                    )}
                   </p>
                 </div>
-                
+
                 <div>
-                  <p className="text-sm font-medium text-gray-500">次回請求日</p>
+                  <p className="text-sm font-medium text-gray-500">
+                    次回請求日
+                  </p>
                   <p className="mt-1 text-lg font-semibold text-gray-900">
                     {formatNextBillingDate(subscription.current_period_end)}
                   </p>
                 </div>
               </div>
 
-              {subscription.status === 'active' && !subscription.cancel_at_period_end && (
-                <div className="mt-8">
-                  <Button
-                    onClick={handleCancelSubscription}
-                    variant="danger"
-                    size="medium"
-                    isLoading={cancelLoading}
-                    className="btn-hover-effect"
-                  >
-                    サブスクリプションをキャンセル
-                  </Button>
-                  <p className="mt-2 text-sm text-gray-500">
-                    * キャンセルしても次回更新日まではサービスを利用できます
-                  </p>
-                </div>
-              )}
+              {subscription.status === "active" &&
+                !subscription.cancel_at_period_end && (
+                  <div className="mt-8">
+                    <Button
+                      onClick={handleCancelSubscription}
+                      variant="danger"
+                      size="medium"
+                      isLoading={cancelLoading}
+                      className="btn-hover-effect"
+                    >
+                      サブスクリプションをキャンセル
+                    </Button>
+                    <p className="mt-2 text-sm text-gray-500">
+                      * キャンセルしても次回更新日まではサービスを利用できます
+                    </p>
+                  </div>
+                )}
             </div>
 
             <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">決済履歴</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                決済履歴
+              </h3>
               <Button
-                onClick={() => navigate('/payment/history')}
+                onClick={() => navigate("/payment/history")}
                 variant="outline"
                 size="small"
                 className="btn-hover-effect"
@@ -188,7 +234,7 @@ const SubscriptionManagement: React.FC = () => {
               現在アクティブなサブスクリプションはありません
             </p>
             <Button
-              onClick={() => navigate('/subscription')}
+              onClick={() => navigate("/subscription")}
               variant="primary"
               size="medium"
               className="btn-hover-effect bg-gradient-to-r from-blue-500 to-indigo-600"
@@ -202,4 +248,4 @@ const SubscriptionManagement: React.FC = () => {
   );
 };
 
-export default SubscriptionManagement; 
+export default SubscriptionManagement;

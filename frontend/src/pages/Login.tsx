@@ -37,7 +37,7 @@ const Login: React.FC = () => {
   if (auth.loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <JuiceLoadingAnimation message="認証状態を確認中..." />
+        <JuiceLoadingAnimation />
       </div>
     );
   }
@@ -113,8 +113,12 @@ const Login: React.FC = () => {
           throw new Error("ログインレスポンスが不正です");
         }
       }
-    } catch (err: any) {
-      setError(err.message || "ログインに失敗しました。");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message || "ログインに失敗しました。");
+      } else {
+        setError("ログインに失敗しました。");
+      }
       setIsSubmitting(false);
     }
   };
