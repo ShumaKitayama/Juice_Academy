@@ -22,25 +22,25 @@ export const config = {
 
 // ログ用ヘルパー関数
 export const logger = {
-  log: (...args: any[]) => {
+  log: (...args: unknown[]) => {
     if (config.enableConsoleLog) {
       console.log(...args);
     }
   },
 
-  error: (...args: any[]) => {
+  error: (...args: unknown[]) => {
     if (config.enableConsoleLog) {
       console.error(...args);
     }
   },
 
-  warn: (...args: any[]) => {
+  warn: (...args: unknown[]) => {
     if (config.enableConsoleLog) {
       console.warn(...args);
     }
   },
 
-  debug: (...args: any[]) => {
+  debug: (...args: unknown[]) => {
     if (config.enableDebugMode) {
       console.debug(...args);
     }

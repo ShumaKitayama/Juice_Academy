@@ -24,21 +24,22 @@ jobs:
         env:
           MONGO_INITDB_DATABASE: juice_academy_test
         options: >-
-          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand(\"ping\").ok' | grep -q 1"
           --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-          --health-start-period 30s
+          --health-timeout 10s
+          --health-retries 10
+          --health-start-period 60s
 
       redis:
         image: redis:alpine
         ports:
           - 6380:6379
         options: >-
-          --health-cmd "redis-cli ping"
+          --health-cmd "redis-cli ping | grep -q PONG"
           --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-timeout 10s
+          --health-retries 10
+          --health-start-period 30s
 
     steps:
       - name: Checkout code
@@ -82,15 +83,54 @@ jobs:
       - name: Wait for MongoDB
         run: |
           echo "⏳ MongoDBの準備完了を待機中..."
-          for i in {1..30}; do
-            if mongosh --host localhost:27018 --eval "db.adminCommand('ping')" > /dev/null 2>&1; then
-              echo "✅ MongoDBが準備完了しました"
+          max_retries=60
+          retry_count=0
+          connected=false
+          
+          while [ $retry_count -lt $max_retries ]; do
+            retry_count=$((retry_count + 1))
+            echo "MongoDB接続試行 $retry_count/$max_retries..."
+            
+            # より堅牢な接続チェック
+            if mongosh --host localhost:27018 --quiet --eval "db.adminCommand('ping').ok" 2>/dev/null | grep -q "1"; then
+              echo "✅ MongoDBが準備完了しました (試行回数: $retry_count)"
+              connected=true
               break
             fi
-            if [ $i -eq 30 ]; then
-              echo "❌ MongoDBの準備がタイムアウトしました"
+            
+            if [ $retry_count -eq $max_retries ]; then
+              echo "❌ MongoDBの準備がタイムアウトしました ($((max_retries * 3))秒経過)"
+              echo "MongoDB接続情報をデバッグ中..."
+              docker ps -a | grep mongo || echo "MongoDBコンテナが見つかりません"
+              mongosh --host localhost:27018 --eval "db.adminCommand('ping')" || echo "MongoDB接続に失敗"
               exit 1
             fi
+            
+            sleep 3
+          done
+
+      - name: Wait for Redis
+        run: |
+          echo "⏳ Redisの準備完了を待機中..."
+          max_retries=30
+          retry_count=0
+          
+          while [ $retry_count -lt $max_retries ]; do
+            retry_count=$((retry_count + 1))
+            echo "Redis接続試行 $retry_count/$max_retries..."
+            
+            if redis-cli -h localhost -p 6380 ping | grep -q "PONG"; then
+              echo "✅ Redisが準備完了しました (試行回数: $retry_count)"
+              break
+            fi
+            
+            if [ $retry_count -eq $max_retries ]; then
+              echo "❌ Redisの準備がタイムアウトしました"
+              echo "Redis接続情報をデバッグ中..."
+              redis-cli -h localhost -p 6380 ping || echo "Redis接続に失敗"
+              exit 1
+            fi
+            
             sleep 2
           done
 
@@ -143,6 +183,8 @@ jobs:
           echo "📋 テスト実行完了"
           echo "✅ 基本機能テスト（認証、お知らせ、JWT、2FA）"
           echo "✅ MongoDB統合テスト（認証、お知らせのCRUD）"
+          echo "✅ Redis統合テスト（OTP重複防止、キャッシュ）"
           echo "✅ データベース接続とクエリ"
           echo "✅ 管理者機能テスト"
           echo "✅ 2段階認証（OTP）機能テスト"
+          echo "⏱️ 改善されたタイムアウト処理（MongoDB: 180秒, Redis: 60秒）"
