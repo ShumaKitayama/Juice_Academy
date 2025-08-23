@@ -30,6 +30,16 @@ jobs:
           --health-retries 5
           --health-start-period 30s
 
+      redis:
+        image: redis:alpine
+        ports:
+          - 6380:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -40,7 +50,7 @@ jobs:
           go-version: "1.21"
 
       - name: Cache Go modules
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cache/go-build
@@ -59,9 +69,14 @@ jobs:
 
       - name: Run basic tests
         working-directory: ./backend
+        env:
+          JWT_SECRET: "test_jwt_secret_for_github_actions"
+          APP_ENV: "test"
+          REDIS_ADDR: "localhost:6380"
         run: |
           echo "🧪 基本テスト（MongoDB不要）を実行中..."
           go test -v ./controllers -run "TestRegister|TestLogin|TestGet.*Handler"
+          go test -v ./controllers -run "TestBasic.*OTP.*Handler"
           go test -v ./middleware
 
       - name: Wait for MongoDB
@@ -83,6 +98,9 @@ jobs:
         working-directory: ./backend
         env:
           MONGODB_TEST_URI: mongodb://localhost:27018
+          JWT_SECRET: "test_jwt_secret_for_github_actions"
+          APP_ENV: "test"
+          REDIS_ADDR: "localhost:6380"
         run: |
           echo "🗄️  MongoDB統合テストを実行中..."
           go test -v ./controllers -run "TestAuthIntegrationSuite|TestUserRegistrationIntegration|TestUserAuthenticationIntegration|TestAdminUserIntegration"
@@ -92,6 +110,9 @@ jobs:
         working-directory: ./backend
         env:
           MONGODB_TEST_URI: mongodb://localhost:27018
+          JWT_SECRET: "test_jwt_secret_for_github_actions"
+          APP_ENV: "test"
+          REDIS_ADDR: "localhost:6380"
         run: |
           echo "👑 管理者機能テストを実行中..."
           go test -v ./controllers -run "TestAdmin.*" || echo "⚠️ 管理者テストで警告（継続）"
@@ -100,13 +121,16 @@ jobs:
         working-directory: ./backend
         env:
           MONGODB_TEST_URI: mongodb://localhost:27018
+          JWT_SECRET: "test_jwt_secret_for_github_actions"
+          APP_ENV: "test"
+          REDIS_ADDR: "localhost:6380"
         run: |
           echo "📊 テストカバレッジを生成中..."
           go test -v -coverprofile=coverage.out ./controllers ./middleware
           go tool cover -func=coverage.out
 
       - name: Upload coverage reports
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           file: ./backend/coverage.out
           directory: ./backend
@@ -117,7 +141,8 @@ jobs:
         if: always()
         run: |
           echo "📋 テスト実行完了"
-          echo "✅ 基本機能テスト（認証、お知らせ、JWT）"
+          echo "✅ 基本機能テスト（認証、お知らせ、JWT、2FA）"
           echo "✅ MongoDB統合テスト（認証、お知らせのCRUD）"
           echo "✅ データベース接続とクエリ"
           echo "✅ 管理者機能テスト"
+          echo "✅ 2段階認証（OTP）機能テスト"
