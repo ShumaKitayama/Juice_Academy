@@ -1,66 +1,106 @@
-import React from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import React from "react";
+import { useAuth } from "../hooks/useAuth";
 
 const Profile: React.FC = () => {
   const { user } = useAuth();
 
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-64">
+        <div className="text-center">
+          <p className="text-gray-500">ユーザー情報を読み込み中...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <h2 className="text-xl font-semibold text-gray-800 mb-6">プロフィール情報</h2>
-      
-      <div className="space-y-6">
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">基本情報</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="max-w-2xl mx-auto">
+      <div className="mb-8">
+        <h2 className="text-3xl font-bold text-gray-800 mb-2">プロフィール</h2>
+        <p className="text-gray-600">アカウント情報を確認できます</p>
+      </div>
+
+      <div className="card-modern p-8">
+        {/* プロフィール画像とメイン情報 */}
+        <div className="flex items-center mb-8">
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white text-2xl font-bold mr-6">
+            {user.nameKana?.charAt(0) || "U"}
+          </div>
+          <div>
+            <h3 className="text-2xl font-bold text-gray-800 mb-1">
+              {user.nameKana || "ユーザー"}
+            </h3>
+            <p className="text-gray-600">{user.email}</p>
+            {user.isAdmin && (
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 mt-2">
+                管理者
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* 基本情報 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-4">
             <div>
-              <p className="text-sm font-medium text-gray-500">氏名</p>
-              <p className="mt-1 text-gray-900">{user?.name || '未設定'}</p>
+              <label className="form-label">学籍番号</label>
+              <div className="p-3 bg-gray-50 rounded-lg border">
+                {user.studentId || "未設定"}
+              </div>
             </div>
-            
+
             <div>
-              <p className="text-sm font-medium text-gray-500">氏名（カナ）</p>
-              <p className="mt-1 text-gray-900">{user?.nameKana || '未設定'}</p>
+              <label className="form-label">ユーザータイプ</label>
+              <div className="p-3 bg-gray-50 rounded-lg border">
+                {user.role === "student"
+                  ? "学生"
+                  : user.role === "teacher"
+                  ? "教師"
+                  : user.role === "admin"
+                  ? "管理者"
+                  : user.role}
+              </div>
             </div>
-            
+          </div>
+
+          <div className="space-y-4">
             <div>
-              <p className="text-sm font-medium text-gray-500">メールアドレス</p>
-              <p className="mt-1 text-gray-900">{user?.email || '未設定'}</p>
+              <label className="form-label">メールアドレス</label>
+              <div className="p-3 bg-gray-50 rounded-lg border">
+                {user.email}
+              </div>
             </div>
-            
+
             <div>
-              <p className="text-sm font-medium text-gray-500">電話番号</p>
-              <p className="mt-1 text-gray-900">{user?.phone || '未設定'}</p>
+              <label className="form-label">アカウント作成日</label>
+              <div className="p-3 bg-gray-50 rounded-lg border">
+                {new Date().toLocaleDateString("ja-JP")}
+              </div>
             </div>
           </div>
         </div>
-        
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">学校情報</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium text-gray-500">学校名</p>
-              <p className="mt-1 text-gray-900">{user?.schoolName || '未設定'}</p>
-            </div>
-            
-            <div>
-              <p className="text-sm font-medium text-gray-500">役職</p>
-              <p className="mt-1 text-gray-900">{user?.position || '未設定'}</p>
-            </div>
-            
-            <div className="md:col-span-2">
-              <p className="text-sm font-medium text-gray-500">学校住所</p>
-              <p className="mt-1 text-gray-900">{user?.schoolAddress || '未設定'}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="flex justify-end">
+
+        {/* アクションボタン */}
+        <div className="flex justify-end mt-8 pt-6 border-t border-gray-200">
           <button
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-juice-orange-500 hover:bg-juice-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-juice-orange-400"
+            className="btn-primary"
+            onClick={() => alert("プロフィール編集機能は準備中です")}
           >
-            プロフィールを編集
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+              />
+            </svg>
+            プロフィール編集
           </button>
         </div>
       </div>
@@ -68,4 +108,4 @@ const Profile: React.FC = () => {
   );
 };
 
-export default Profile; 
+export default Profile;

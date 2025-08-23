@@ -1,13 +1,13 @@
-import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import React from "react";
+import { Navigate, Outlet } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 
 interface ProtectedRouteProps {
   redirectPath?: string;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  redirectPath = '/login'
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  redirectPath = "/login",
 }) => {
   const { isAuthenticated, loading } = useAuth();
 
@@ -29,4 +29,4 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   return <Outlet />;
 };
 
-export default ProtectedRoute; 
+export default ProtectedRoute;

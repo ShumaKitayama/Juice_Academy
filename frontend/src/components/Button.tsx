@@ -1,69 +1,105 @@
-import React, { ButtonHTMLAttributes } from 'react';
+import React, { ButtonHTMLAttributes } from "react";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'success';
-  size?: 'small' | 'medium' | 'large';
+  variant?:
+    | "primary"
+    | "secondary"
+    | "outline"
+    | "danger"
+    | "success"
+    | "ghost";
+  size?: "small" | "medium" | "large";
   isLoading?: boolean;
   fullWidth?: boolean;
   icon?: React.ReactNode;
+  iconPosition?: "left" | "right";
 }
 
 const Button: React.FC<ButtonProps> = ({
   children,
-  variant = 'primary',
-  size = 'medium',
+  variant = "primary",
+  size = "medium",
   isLoading = false,
   fullWidth = false,
   icon,
-  className = '',
+  iconPosition = "left",
+  className = "",
   disabled,
   ...props
 }) => {
   // バリアントに基づくスタイル
-  const variantStyles = {
-    primary: 'bg-blue-600 hover:bg-blue-700 text-white border-transparent',
-    secondary: 'bg-gray-600 hover:bg-gray-700 text-white border-transparent',
-    outline: 'bg-white hover:bg-gray-50 text-blue-600 border-blue-600',
-    danger: 'bg-red-600 hover:bg-red-700 text-white border-transparent',
-    success: 'bg-green-600 hover:bg-green-700 text-white border-transparent',
+  const getVariantStyles = () => {
+    const baseStyles =
+      "font-semibold transition-all duration-300 ease-out focus:outline-none focus:ring-4 focus:ring-opacity-50";
+
+    switch (variant) {
+      case "primary":
+        return `${baseStyles} btn-primary focus:ring-orange-200`;
+      case "secondary":
+        return `${baseStyles} btn-secondary focus:ring-orange-200`;
+      case "outline":
+        return `${baseStyles} btn-outline focus:ring-gray-200`;
+      case "danger":
+        return `${baseStyles} bg-red-500 hover:bg-red-600 text-white border-transparent hover:shadow-lg hover:-translate-y-0.5 focus:ring-red-200`;
+      case "success":
+        return `${baseStyles} bg-green-500 hover:bg-green-600 text-white border-transparent hover:shadow-lg hover:-translate-y-0.5 focus:ring-green-200`;
+      case "ghost":
+        return `${baseStyles} bg-transparent hover:bg-gray-100 text-gray-600 hover:text-gray-800 border-transparent`;
+      default:
+        return `${baseStyles} btn-primary focus:ring-orange-200`;
+    }
   };
 
   // サイズに基づくスタイル
-  const sizeStyles = {
-    small: 'py-1 px-3 text-sm',
-    medium: 'py-2 px-4 text-base',
-    large: 'py-3 px-6 text-lg',
+  const getSizeStyles = () => {
+    switch (size) {
+      case "small":
+        return "px-4 py-2 text-sm rounded-lg";
+      case "medium":
+        return "px-6 py-3 text-base rounded-xl";
+      case "large":
+        return "px-8 py-4 text-lg rounded-2xl";
+      default:
+        return "px-6 py-3 text-base rounded-xl";
+    }
   };
 
-  // 無効状態のスタイル
-  const disabledStyle = disabled || isLoading
-    ? 'opacity-50 cursor-not-allowed'
-    : 'hover:shadow-md active:shadow-inner';
+  // 無効状態とローディング状態のスタイル
+  const getStateStyles = () => {
+    if (disabled && !isLoading) {
+      return "opacity-60 cursor-not-allowed transform-none hover:transform-none";
+    }
+    if (isLoading) {
+      return "opacity-80 cursor-wait";
+    }
+    return "";
+  };
 
   // 幅のスタイル
-  const widthStyle = fullWidth ? 'w-full' : '';
+  const widthStyle = fullWidth ? "w-full" : "";
 
-  return (
-    <button
-      className={`
-        inline-flex items-center justify-center
-        font-medium rounded-md
-        border transition-all duration-200 ease-in-out
-        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
-        ${variantStyles[variant]}
-        ${sizeStyles[size]}
-        ${disabledStyle}
-        ${widthStyle}
-        ${className}
-        transform hover:-translate-y-0.5 active:translate-y-0
-      `}
-      disabled={disabled || isLoading}
-      {...props}
-    >
-      {isLoading ? (
+  // アイコンのサイズ
+  const getIconSize = () => {
+    switch (size) {
+      case "small":
+        return "w-4 h-4";
+      case "medium":
+        return "w-5 h-5";
+      case "large":
+        return "w-6 h-6";
+      default:
+        return "w-5 h-5";
+    }
+  };
+
+  const renderContent = () => {
+    if (isLoading) {
+      return (
         <>
           <svg
-            className="animate-spin -ml-1 mr-2 h-4 w-4 text-current"
+            className={`animate-spin ${getIconSize()} ${
+              children ? "mr-2" : ""
+            }`}
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
@@ -82,16 +118,44 @@ const Button: React.FC<ButtonProps> = ({
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
             ></path>
           </svg>
-          処理中...
+          {children && <span>処理中...</span>}
         </>
-      ) : (
-        <>
-          {icon && <span className="mr-2">{icon}</span>}
-          {children}
-        </>
-      )}
+      );
+    }
+
+    return (
+      <>
+        {icon && iconPosition === "left" && (
+          <span className={`${getIconSize()} ${children ? "mr-2" : ""}`}>
+            {icon}
+          </span>
+        )}
+        {children}
+        {icon && iconPosition === "right" && (
+          <span className={`${getIconSize()} ${children ? "ml-2" : ""}`}>
+            {icon}
+          </span>
+        )}
+      </>
+    );
+  };
+
+  return (
+    <button
+      className={`
+        inline-flex items-center justify-center
+        ${getVariantStyles()}
+        ${getSizeStyles()}
+        ${getStateStyles()}
+        ${widthStyle}
+        ${className}
+      `}
+      disabled={disabled || isLoading}
+      {...props}
+    >
+      {renderContent()}
     </button>
   );
 };
 
-export default Button; 
+export default Button;
