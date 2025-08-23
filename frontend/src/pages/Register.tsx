@@ -1,38 +1,49 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import Card from '../components/Card';
-import SuccessAlert from '../components/SuccessAlert';
-import ErrorAlert from '../components/ErrorAlert';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import Card from "../components/Card";
+import ErrorAlert from "../components/ErrorAlert";
+import SuccessAlert from "../components/SuccessAlert";
+import { useAuth } from "../hooks/useAuth";
+
+// APIエラー型定義
+interface ApiError {
+  response?: {
+    data?: {
+      error?: string;
+    };
+  };
+}
 
 const Register: React.FC = () => {
   const [formData, setFormData] = useState({
-    role: 'student', // デフォルトは学生
-    student_id: '',
-    name_kana: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
+    role: "student", // デフォルトは学生
+    student_id: "",
+    name_kana: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
   });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
-  
+
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    
+
     // パスワード確認
     if (formData.password !== formData.confirmPassword) {
-      setError('パスワードが一致しません');
+      setError("パスワードが一致しません");
       return;
     }
 
@@ -40,16 +51,17 @@ const Register: React.FC = () => {
 
     try {
       // confirmPasswordを除いたデータを送信
-      const { confirmPassword, ...registerData } = formData;
+      const { ...registerData } = formData;
       await register(registerData);
       setSuccess(true);
-      
+
       // 登録成功後、3秒後にログインページへリダイレクト
       setTimeout(() => {
-        navigate('/login');
+        navigate("/login");
       }, 3000);
-    } catch (err: any) {
-      setError(err.response?.data?.error || '登録に失敗しました。');
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.response?.data?.error || "登録に失敗しました。");
     } finally {
       setIsSubmitting(false);
     }
@@ -67,13 +79,13 @@ const Register: React.FC = () => {
               学校にドリンクバーを設置するためのサービス
             </p>
           </div>
-          
+
           <Card className="overflow-hidden">
             <div className="p-8 text-center">
               <SuccessAlert message="アカウントが正常に作成されました。ログインページに移動します。" />
               <div className="mt-6">
-                <Link 
-                  to="/login" 
+                <Link
+                  to="/login"
                   className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-juice-orange-500 hover:bg-juice-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-juice-orange-400"
                 >
                   ログインページへ
@@ -97,18 +109,21 @@ const Register: React.FC = () => {
             学校にドリンクバーを設置するためのサービス
           </p>
         </div>
-        
+
         <Card className="overflow-hidden">
           <div className="p-8">
             <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
               新規アカウント登録
             </h2>
-            
+
             {error && <ErrorAlert message={error} className="mb-6" />}
-            
+
             <form className="space-y-5" onSubmit={handleSubmit}>
               <div>
-                <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="role"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   ユーザータイプ
                 </label>
                 <select
@@ -123,9 +138,12 @@ const Register: React.FC = () => {
                   <option value="teacher">教師</option>
                 </select>
               </div>
-              
+
               <div>
-                <label htmlFor="student_id" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="student_id"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   学籍番号
                 </label>
                 <input
@@ -139,9 +157,12 @@ const Register: React.FC = () => {
                   onChange={handleChange}
                 />
               </div>
-              
+
               <div>
-                <label htmlFor="name_kana" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="name_kana"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   氏名（カナ）
                 </label>
                 <input
@@ -155,9 +176,12 @@ const Register: React.FC = () => {
                   onChange={handleChange}
                 />
               </div>
-              
+
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   メールアドレス
                 </label>
                 <input
@@ -172,9 +196,12 @@ const Register: React.FC = () => {
                   onChange={handleChange}
                 />
               </div>
-              
+
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   パスワード
                 </label>
                 <input
@@ -192,9 +219,12 @@ const Register: React.FC = () => {
                   8文字以上で、英字と数字を含めてください
                 </p>
               </div>
-              
+
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   パスワード（確認）
                 </label>
                 <input
@@ -215,22 +245,42 @@ const Register: React.FC = () => {
                   type="submit"
                   disabled={isSubmitting}
                   className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-                    isSubmitting ? 'bg-juice-orange-400' : 'bg-juice-orange-500 hover:bg-juice-orange-600'
+                    isSubmitting
+                      ? "bg-juice-orange-400"
+                      : "bg-juice-orange-500 hover:bg-juice-orange-600"
                   } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-juice-orange-500 transition-colors duration-200`}
                 >
                   {isSubmitting ? (
                     <span className="flex items-center">
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
                       </svg>
                       処理中...
                     </span>
-                  ) : '登録する'}
+                  ) : (
+                    "登録する"
+                  )}
                 </button>
               </div>
             </form>
-            
+
             <div className="mt-6">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
@@ -240,26 +290,30 @@ const Register: React.FC = () => {
                   <span className="px-2 bg-white text-gray-500">または</span>
                 </div>
               </div>
-              
+
               <div className="mt-6 text-center">
                 <p className="text-sm text-gray-600">
                   既にアカウントをお持ちの方は
-                  <Link to="/login" className="ml-1 font-medium text-juice-orange-600 hover:text-juice-orange-500">
+                  <Link
+                    to="/login"
+                    className="ml-1 font-medium text-juice-orange-600 hover:text-juice-orange-500"
+                  >
                     ログイン
                   </Link>
                 </p>
               </div>
             </div>
           </div>
-          
+
           <div className="px-8 py-4 bg-gray-50 border-t border-gray-200 text-center text-xs text-gray-500">
             登録することで、利用規約とプライバシーポリシーに同意したことになります。
           </div>
         </Card>
-        
+
         <div className="mt-8 text-center">
           <p className="text-xs text-gray-500">
-            &copy; {new Date().getFullYear()} Juice Academy. All rights reserved.
+            &copy; {new Date().getFullYear()} Juice Academy. All rights
+            reserved.
           </p>
         </div>
       </div>
@@ -267,4 +321,4 @@ const Register: React.FC = () => {
   );
 };
 
-export default Register; 
+export default Register;

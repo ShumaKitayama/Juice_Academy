@@ -1,11 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { Announcement, getAllAnnouncements } from '../services/announcementService';
-import AnnouncementCard from '../components/AnnouncementCard';
-import LoadingSpinner from '../components/LoadingSpinner';
-import ErrorAlert from '../components/ErrorAlert';
-import Button from '../components/Button';
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import AnnouncementCard from "../components/AnnouncementCard";
+import Button from "../components/Button";
+import ErrorAlert from "../components/ErrorAlert";
+import LoadingSpinner from "../components/LoadingSpinner";
+import { useAuth } from "../hooks/useAuth";
+import {
+  Announcement,
+  getAllAnnouncements,
+} from "../services/announcementService";
 
 const AdminAnnouncementList: React.FC = () => {
   const navigate = useNavigate();
@@ -16,22 +19,22 @@ const AdminAnnouncementList: React.FC = () => {
 
   useEffect(() => {
     // 管理者権限チェック
-    if (!user || user.role !== 'admin') {
-      console.error('管理者権限が必要です。現在のユーザー:', user);
-      navigate('/');
+    if (!user || user.role !== "admin") {
+      console.error("管理者権限が必要です。現在のユーザー:", user);
+      navigate("/");
       return;
     }
 
-    console.log('管理者としてログイン中:', user);
-    
+    console.log("管理者としてログイン中:", user);
+
     const fetchAnnouncements = async () => {
       try {
         const data = await getAllAnnouncements();
         setAnnouncements(data);
         setLoading(false);
       } catch (err) {
-        console.error('お知らせの取得に失敗しました', err);
-        setError('お知らせの取得に失敗しました');
+        console.error("お知らせの取得に失敗しました", err);
+        setError("お知らせの取得に失敗しました");
         setLoading(false);
       }
     };
@@ -40,11 +43,11 @@ const AdminAnnouncementList: React.FC = () => {
   }, [user, navigate]);
 
   const handleGoBack = () => {
-    navigate('/');
+    navigate("/");
   };
 
   const handleCreateNew = () => {
-    navigate('/admin/announcements/create');
+    navigate("/admin/announcements/create");
   };
 
   const handleEdit = (id: string) => {
@@ -57,18 +60,10 @@ const AdminAnnouncementList: React.FC = () => {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-900">お知らせ管理</h1>
           <div className="flex space-x-3">
-            <Button
-              onClick={handleCreateNew}
-              variant="primary"
-              size="small"
-            >
+            <Button onClick={handleCreateNew} variant="primary" size="small">
               作成する
             </Button>
-            <Button
-              onClick={handleGoBack}
-              variant="outline"
-              size="small"
-            >
+            <Button onClick={handleGoBack} variant="outline" size="small">
               ダッシュボードへ戻る
             </Button>
           </div>
@@ -113,4 +108,4 @@ const AdminAnnouncementList: React.FC = () => {
   );
 };
 
-export default AdminAnnouncementList; 
+export default AdminAnnouncementList;

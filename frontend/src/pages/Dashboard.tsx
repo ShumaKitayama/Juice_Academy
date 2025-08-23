@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
 import AnnouncementCard from "../components/AnnouncementCard";
+import Card from "../components/Card";
+import LoadingSpinner from "../components/LoadingSpinner";
+import { useAuth } from "../hooks/useAuth";
 import {
   Announcement,
   getLatestAnnouncements,
 } from "../services/announcementService";
-import LoadingSpinner from "../components/LoadingSpinner";
 import Loading from "./Loading";
 
 const Dashboard: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -18,13 +19,12 @@ const Dashboard: React.FC = () => {
     sessionStorage.getItem("isLoading") === "true"
   );
 
-  // ユーザーが管理者かどうかをチェック（roleが'admin'の場合、または明示的にisAdminがtrueの場合）
+  // ユーザーが管理者かどうかをチェック
   const isAdmin = user?.role === "admin" || user?.isAdmin === true;
 
   useEffect(() => {
     if (isLoading) {
       const timeout = setTimeout(() => {
-        // 1.5秒後にステートをfalseに更新＆セッションストレージを削除
         setIsLoading(false);
         sessionStorage.removeItem("isLoading");
       }, 1500);
@@ -33,12 +33,9 @@ const Dashboard: React.FC = () => {
   }, [isLoading]);
 
   useEffect(() => {
-    // デバッグログ
-    console.log("現在のユーザー情報:", user);
-
     const fetchAnnouncements = async () => {
       try {
-        const data = await getLatestAnnouncements(3); // 最新3件を取得
+        const data = await getLatestAnnouncements(5);
         setAnnouncements(data);
         setLoading(false);
       } catch (err) {
@@ -49,224 +46,314 @@ const Dashboard: React.FC = () => {
     };
 
     fetchAnnouncements();
-  }, [user]);
+  }, []);
 
+  // ローディング画面を表示
   if (isLoading) {
-    return (
-      <Loading /> // ローディング中のコンポーネントを表示
-    );
+    return <Loading />;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-900">ダッシュボード</h1>
-          <button
-            onClick={logout}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-          >
-            ログアウト
-          </button>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* ヘッダーセクション */}
+        <div className="mb-8">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-gray-800 mb-4">
+              おかえりなさい！
+              <span className="block text-2xl text-orange-600 font-semibold mt-2">
+                {user?.nameKana || "ユーザー"}さん
+              </span>
+            </h1>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Juice
+              Academyのドリンクバーサービスへようこそ。美味しいドリンクをお楽しみください。
+            </p>
+          </div>
         </div>
-      </header>
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          {/* お知らせセクション */}
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-8">
-            <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
-              <div>
-                <h3 className="text-lg leading-6 font-medium text-gray-900">
-                  お知らせ
-                </h3>
-                <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                  最新情報を確認してください
-                </p>
-              </div>
-              <div className="flex items-center space-x-4">
-                {isAdmin && (
-                  <Link
-                    to="/admin/announcements"
-                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                  >
-                    お知らせ管理
-                  </Link>
-                )}
-                <Link
-                  to="/announcements"
-                  className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-blue-600 hover:text-blue-800 focus:outline-none"
+        {/* お知らせセクション - 最上部に配置 */}
+        <div className="mb-12">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-800">最新のお知らせ</h2>
+            <Link
+              to="/announcements"
+              className="text-orange-600 hover:text-orange-700 font-medium text-sm transition-colors"
+            >
+              すべて見る →
+            </Link>
+          </div>
+
+          {loading ? (
+            <Card className="text-center py-12">
+              <LoadingSpinner size="large" />
+              <p className="mt-4 text-gray-600">お知らせを読み込み中...</p>
+            </Card>
+          ) : error ? (
+            <Card variant="simple" className="text-center py-12">
+              <div className="text-red-500 mb-4">
+                <svg
+                  className="w-12 h-12 mx-auto"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  すべて見る →
-                </Link>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                  />
+                </svg>
               </div>
+              <p className="text-gray-600">{error}</p>
+            </Card>
+          ) : announcements.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {announcements.map((announcement) => (
+                <AnnouncementCard
+                  key={announcement.id}
+                  announcement={announcement}
+                />
+              ))}
             </div>
-            <div className="border-t border-gray-200 px-4 py-5 sm:p-6">
-              {loading ? (
-                <div className="flex justify-center py-4">
-                  <LoadingSpinner />
-                </div>
-              ) : error ? (
-                <p className="text-red-500 text-center">{error}</p>
-              ) : announcements.length === 0 ? (
-                <p className="text-gray-500 text-center">
-                  現在お知らせはありません
-                </p>
-              ) : (
-                <div>
-                  {announcements.map((announcement, index) => (
-                    <AnnouncementCard
-                      key={announcement.id}
-                      announcement={announcement}
-                      isNew={index === 0} // 最新のお知らせには「新着情報」バッジを表示
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-            <div className="px-4 py-5 sm:px-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">
-                ユーザー情報
-              </h3>
-              <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                アカウント詳細と登録情報
-              </p>
-            </div>
-            <div className="border-t border-gray-200">
-              <dl>
-                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">氏名</dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {user?.nameKana}
-                  </dd>
-                </div>
-                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">
-                    メールアドレス
-                  </dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {user?.email}
-                  </dd>
-                </div>
-                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">
-                    学籍番号
-                  </dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {user?.studentId}
-                  </dd>
-                </div>
-                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">
-                    ユーザータイプ
-                  </dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {user?.role === "admin"
-                      ? "管理者"
-                      : user?.role === "student"
-                      ? "学生"
-                      : "教師"}
-                  </dd>
-                </div>
-                {isAdmin && (
-                  <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                    <dt className="text-sm font-medium text-gray-500">
-                      管理者権限
-                    </dt>
-                    <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                      有効
-                    </dd>
-                  </div>
-                )}
-              </dl>
-            </div>
-          </div>
-
-          <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
-            {/* 管理者向けカード */}
-            {isAdmin && (
-              <div className="bg-white overflow-hidden shadow rounded-lg">
-                <div className="px-4 py-5 sm:p-6">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900">
-                    管理者機能
-                  </h3>
-                  <div className="mt-2 max-w-xl text-sm text-gray-500">
-                    <p>お知らせの管理と作成</p>
-                  </div>
-                  <div className="mt-5">
-                    <Link
-                      to="/admin/announcements"
-                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    >
-                      お知らせを管理
-                    </Link>
-                  </div>
-                </div>
+          ) : (
+            <Card variant="simple" className="text-center py-12">
+              <div className="text-gray-400 mb-4">
+                <svg
+                  className="w-12 h-12 mx-auto"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+                  />
+                </svg>
               </div>
-            )}
-
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="px-4 py-5 sm:p-6">
-                <h3 className="text-lg leading-6 font-medium text-gray-900">
-                  決済情報
-                </h3>
-                <div className="mt-2 max-w-xl text-sm text-gray-500">
-                  <p>サブスクリプションと支払い方法の管理</p>
-                </div>
-                <div className="mt-5">
-                  <Link
-                    to="/payment-setup"
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    決済情報を管理
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="px-4 py-5 sm:p-6">
-                <h3 className="text-lg leading-6 font-medium text-gray-900">
-                  サブスクリプション
-                </h3>
-                <div className="mt-2 max-w-xl text-sm text-gray-500">
-                  <p>現在のプランと利用状況</p>
-                </div>
-                <div className="mt-5">
-                  <Link
-                    to="/subscription"
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    プランを変更
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="px-4 py-5 sm:p-6">
-                <h3 className="text-lg leading-6 font-medium text-gray-900">
-                  支払い履歴
-                </h3>
-                <div className="mt-2 max-w-xl text-sm text-gray-500">
-                  <p>過去の支払い記録と詳細</p>
-                </div>
-                <div className="mt-5">
-                  <Link
-                    to="/mypage/payment-history"
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    履歴を確認
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
+              <p className="text-gray-600">現在お知らせはありません</p>
+            </Card>
+          )}
         </div>
-      </main>
+
+        {/* サブスクリプション説明セクション */}
+        <Card variant="featured" className="mb-12">
+          <div className="text-center py-8">
+            <div className="w-16 h-16 bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <svg
+                className="w-8 h-8 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              ドリンクバーサービス
+            </h2>
+            <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
+              月額3,000円でキャンパス内のドリンクサーバーが使い放題！
+              <br />
+              コーヒー、紅茶、ジュース、炭酸飲料など豊富なメニューをご用意しています。
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link to="/subscription" className="btn-primary">
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                  />
+                </svg>
+                サブスクリプション登録
+              </Link>
+              <Link to="/mypage" className="btn-secondary">
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+                マイページ
+              </Link>
+            </div>
+          </div>
+        </Card>
+
+        {/* 現在準備中セクション */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+          <Card variant="simple" className="text-center py-8">
+            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg
+                className="w-6 h-6 text-gray-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+              設置場所案内
+            </h3>
+            <p className="text-gray-600 text-sm mb-4">
+              キャンパス内のドリンクサーバー設置場所をマップで確認
+            </p>
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+              準備中
+            </span>
+          </Card>
+
+          <Card variant="simple" className="text-center py-8">
+            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg
+                className="w-6 h-6 text-gray-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H9a2 2 0 01-2-2z"
+                />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+              利用統計
+            </h3>
+            <p className="text-gray-600 text-sm mb-4">
+              月間利用回数や人気ドリンクランキングを表示
+            </p>
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+              準備中
+            </span>
+          </Card>
+
+          <Card variant="simple" className="text-center py-8">
+            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg
+                className="w-6 h-6 text-gray-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+              営業時間
+            </h3>
+            <p className="text-gray-600 text-sm mb-4">
+              各設置場所の営業時間とメンテナンス情報
+            </p>
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+              準備中
+            </span>
+          </Card>
+        </div>
+
+        {/* 管理者向けセクション */}
+        {isAdmin && (
+          <Card variant="elevated" className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+              <svg
+                className="w-5 h-5 mr-2 text-orange-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                />
+              </svg>
+              管理者メニュー
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Link
+                to="/admin/announcements"
+                className="btn-outline w-full text-left"
+              >
+                <svg
+                  className="w-4 h-4 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"
+                  />
+                </svg>
+                お知らせ管理
+              </Link>
+              <Link
+                to="/admin/announcements/create"
+                className="btn-primary w-full text-left"
+              >
+                <svg
+                  className="w-4 h-4 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                  />
+                </svg>
+                新しいお知らせを作成
+              </Link>
+            </div>
+          </Card>
+        )}
+      </div>
     </div>
   );
 };
