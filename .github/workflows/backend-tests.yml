@@ -99,12 +99,12 @@ jobs:
         run: |
           echo "📦 Redis CLIツールをインストール中..."
           sudo apt-get update
-          sudo apt-get install -y redis-tools netcat
+          sudo apt-get install -y redis-tools netcat-openbsd
 
           # インストール確認
           redis-cli --version
-          nc -h | head -1 || echo "netcat installed"
-          echo "✅ redis-cliとnetcatのインストールが完了しました"
+          nc -h 2>&1 | head -1 || echo "netcat-openbsd installed"
+          echo "✅ redis-cliとnetcat-openbsdのインストールが完了しました"
 
       - name: Wait for MongoDB
         run: |
