@@ -32,6 +32,8 @@ log_error() {
 # オプション解析
 BUILD_ONLY=false
 NO_BACKUP=false
+RUN_TESTS=true
+SKIP_TESTS=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -43,10 +45,24 @@ while [[ $# -gt 0 ]]; do
             NO_BACKUP=true
             shift
             ;;
+        --skip-tests)
+            SKIP_TESTS=true
+            RUN_TESTS=false
+            shift
+            ;;
+        --run-tests)
+            RUN_TESTS=true
+            SKIP_TESTS=false
+            shift
+            ;;
         -h|--help)
-            echo "使用方法: $0 [--build-only] [--no-backup]"
-            echo "  --build-only  ビルドのみ実行（デプロイはしない）"
-            echo "  --no-backup   データベースバックアップをスキップ"
+            echo "使用方法: $0 [オプション]"
+            echo "オプション:"
+            echo "  --build-only   ビルドのみ実行（デプロイはしない）"
+            echo "  --no-backup    データベースバックアップをスキップ"
+            echo "  --skip-tests   テスト実行をスキップ"
+            echo "  --run-tests    テストを実行（デフォルト）"
+            echo "  -h, --help     このヘルプを表示"
             exit 0
             ;;
         *)
@@ -93,6 +109,7 @@ log_info "📋 デプロイ情報:"
 log_info "   ブランチ: $CURRENT_BRANCH"
 log_info "   コミット: $COMMIT_HASH"
 log_info "   時刻: $DEPLOY_TIME"
+log_info "   テスト実行: $([ "$RUN_TESTS" = true ] && echo "有効" || echo "スキップ")"
 
 # データベースバックアップ（本番環境でのみ、かつ--no-backupが指定されていない場合）
 if [ "$NO_BACKUP" = false ]; then
@@ -110,6 +127,27 @@ if [ "$NO_BACKUP" = false ]; then
     else
         log_warning "MongoDBコンテナが起動していないため、バックアップをスキップします"
     fi
+fi
+
+# テスト実行（オプション）
+if [ "$RUN_TESTS" = true ]; then
+    log_info "🧪 デプロイ前テストを実行します..."
+    
+    # バックエンドディレクトリの確認
+    if [ -f "backend/run_tests.sh" ]; then
+        cd backend
+        if ./run_tests.sh; then
+            log_success "全てのテストが成功しました"
+        else
+            log_error "テストが失敗しました。デプロイを中止します"
+            exit 1
+        fi
+        cd ..
+    else
+        log_warning "テスト実行スクリプトが見つかりません。テストをスキップします"
+    fi
+else
+    log_warning "テスト実行がスキップされました"
 fi
 
 # 既存のコンテナを停止・削除
@@ -236,6 +274,10 @@ log_info "   ログ確認: docker-compose -f docker-compose.prod.yml logs -f"
 log_info "   状態確認: docker-compose -f docker-compose.prod.yml ps"
 log_info "   停止: docker-compose -f docker-compose.prod.yml down"
 log_info "   再起動: docker-compose -f docker-compose.prod.yml restart"
+echo ""
+log_info "🧪 テスト関連コマンド:"
+log_info "   バックエンドテスト: cd backend && ./run_tests.sh"
+log_info "   テストカバレッジ: cd backend && ./run_tests.sh --coverage"
 echo ""
 log_info "💾 バックアップ場所: mongodb-backup/$DEPLOY_TIME"
 echo ""

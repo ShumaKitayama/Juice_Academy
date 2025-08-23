@@ -63,15 +63,41 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         if (currentUser) {
           setUser(currentUser);
           setIsAuthenticated(true);
+        } else {
+          setUser(null);
+          setIsAuthenticated(false);
         }
       } catch (err) {
         console.error("認証状態の確認中にエラーが発生しました", err);
+        setUser(null);
+        setIsAuthenticated(false);
       } finally {
         setLoading(false);
       }
     };
 
     checkAuth();
+
+    // storageイベントリスナーを追加（他のタブでの認証状態変更を検知）
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "token" || e.key === "user") {
+        checkAuth();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+
+    // localStorageの変更を検知するためのカスタムイベント
+    const handleAuthChange = () => {
+      checkAuth();
+    };
+
+    window.addEventListener("auth-changed", handleAuthChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("auth-changed", handleAuthChange);
+    };
   }, []);
 
   // ログイン処理
@@ -117,6 +143,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     authAPI.logout();
     setUser(null);
     setIsAuthenticated(false);
+    // 認証状態の変更を通知
+    window.dispatchEvent(new Event("auth-changed"));
   };
 
   // コンテキスト値

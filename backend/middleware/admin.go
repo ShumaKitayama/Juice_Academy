@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/dgrijalva/jwt-go"
@@ -43,8 +44,12 @@ func AdminRequired() gin.HandlerFunc {
 				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 					return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 				}
-				// auth.goと同じ秘密鍵を使用
-				return []byte("your_secret_key"), nil
+				// 環境変数からJWTシークレットを取得
+				secret := os.Getenv("JWT_SECRET")
+				if secret == "" {
+					return nil, fmt.Errorf("JWT_SECRET environment variable is not set")
+				}
+				return []byte(secret), nil
 			})
 
 			if err == nil && token.Valid {

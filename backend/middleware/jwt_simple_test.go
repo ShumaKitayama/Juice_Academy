@@ -3,6 +3,7 @@ package middleware
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -49,7 +50,12 @@ func generateTestToken(userID, email, role string, isAdmin bool, expiry time.Tim
 	}
 	
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, _ := token.SignedString([]byte("your_secret_key"))
+	// テスト用の固定シークレットを使用（環境変数が設定されていない場合）
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		secret = "test-jwt-secret-key-minimum-32-characters-long"
+	}
+	tokenString, _ := token.SignedString([]byte(secret))
 	return tokenString
 }
 

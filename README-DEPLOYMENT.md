@@ -10,6 +10,8 @@
 
 - Docker (20.10.0 以降)
 - Docker Compose (1.29.0 以降)
+- Go (1.21 以降) - テスト実行用
+- Node.js (18 以降) - フロントエンドビルド用
 - Git
 - curl（ヘルスチェック用）
 
@@ -89,14 +91,37 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 ### 4. デプロイの実行
 
 ```bash
-# デプロイスクリプトを実行
+# 完全デプロイ（テスト実行込み）
 ./deploy.sh
 
-# または、ビルドのみ実行する場合
+# テストをスキップしてデプロイ
+./deploy.sh --skip-tests
+
+# ビルドのみ実行する場合
 ./deploy.sh --build-only
 
 # バックアップをスキップする場合
 ./deploy.sh --no-backup
+
+# 全オプションの確認
+./deploy.sh --help
+```
+
+### 5. テスト実行（デプロイ前の確認推奨）
+
+```bash
+# バックエンドテストの実行
+cd backend
+./run_tests.sh
+
+# テストカバレッジ付きで実行
+cd backend
+./run_tests.sh --coverage
+
+# フロントエンドのビルドテスト
+cd frontend
+npm run build
+npm run lint
 ```
 
 ## 運用コマンド
@@ -114,6 +139,27 @@ docker-compose -f docker-compose.prod.yml logs -f
 docker-compose -f docker-compose.prod.yml logs -f backend
 docker-compose -f docker-compose.prod.yml logs -f frontend
 docker-compose -f docker-compose.prod.yml logs -f mongodb
+```
+
+### テスト関連
+
+```bash
+# バックエンドテストの実行
+cd backend && ./run_tests.sh
+
+# テストカバレッジの生成
+cd backend && ./run_tests.sh --coverage
+
+# 個別テストの実行
+cd backend
+go test -v ./controllers -run TestName
+go test -v ./middleware
+
+# フロントエンドテスト
+cd frontend
+npm run lint
+npx tsc --noEmit
+npm run build
 ```
 
 ### サービスの制御
@@ -185,7 +231,68 @@ du -sh mongodb-backup/
 du -sh logs/
 ```
 
+### CI/CD（継続的インテグレーション）
+
+GitHub Actions を使用した自動テスト・デプロイが設定されています：
+
+```bash
+# ワークフロー一覧
+.github/workflows/
+├── backend-tests.yml      # バックエンドテスト
+├── frontend-tests.yml     # フロントエンドテスト
+└── deploy-production.yml  # 本番デプロイ
+```
+
+#### テストの自動実行
+
+- `main` または `production-deployment` ブランチへのプッシュ時
+- プルリクエスト作成時
+- バックエンド・フロントエンドファイルの変更時
+
+#### 本番デプロイワークフロー
+
+- `main` ブランチへのプッシュ時に自動実行
+- 手動実行も可能（GitHub Actions 画面から）
+- テスト成功後にデプロイ準備を実行
+
 ## トラブルシューティング
+
+### テスト関連の問題
+
+#### 1. テスト実行エラー
+
+```bash
+# エラー例：MongoDB接続エラー
+```
+
+**解決策**：
+
+```bash
+# テスト用MongoDBを再起動
+cd backend
+docker-compose -f docker-compose.test.yml down -v
+docker-compose -f docker-compose.test.yml up -d
+
+# ヘルスチェック確認
+docker-compose -f docker-compose.test.yml logs mongodb-test
+```
+
+#### 2. テストタイムアウト
+
+```bash
+# エラー例：test timeout
+```
+
+**解決策**：
+
+```bash
+# タイムアウト時間を延長
+cd backend
+go test -v ./controllers -run ".*Integration.*" -timeout 120s
+
+# または個別にテスト実行
+go test -v ./controllers -run TestAuthIntegrationSuite
+```
 
 ### よくある問題と解決方法
 
