@@ -26,20 +26,76 @@ const Register: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<{
+    name_kana?: string;
+    password?: string;
+  }>({});
 
   const { register } = useAuth();
   const navigate = useNavigate();
+
+  // 氏名（カナ）のバリデーション
+  const validateNameKana = (nameKana: string): boolean => {
+    const katakanaPattern = /^[ァ-ヶー\s\u3000]+$/;
+    return katakanaPattern.test(nameKana);
+  };
+
+  // パスワードのバリデーション
+  const validatePassword = (password: string): boolean => {
+    if (password.length < 8) return false;
+
+    const hasUpper = /[A-Z]/.test(password);
+    const hasLower = /[a-z]/.test(password);
+    const hasDigit = /[0-9]/.test(password);
+
+    return hasUpper && hasLower && hasDigit;
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // リアルタイムバリデーション
+    const newValidationErrors = { ...validationErrors };
+
+    if (name === "name_kana") {
+      if (value && !validateNameKana(value)) {
+        newValidationErrors.name_kana = "カタカナのみで入力してください";
+      } else {
+        delete newValidationErrors.name_kana;
+      }
+    }
+
+    if (name === "password") {
+      if (value && !validatePassword(value)) {
+        newValidationErrors.password =
+          "8文字以上で、英字の大文字・小文字・数字をすべて含む必要があります";
+      } else {
+        delete newValidationErrors.password;
+      }
+    }
+
+    setValidationErrors(newValidationErrors);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // バリデーションチェック
+    if (!validateNameKana(formData.name_kana)) {
+      setError("氏名（カナ）はカタカナのみで入力してください");
+      return;
+    }
+
+    if (!validatePassword(formData.password)) {
+      setError(
+        "パスワードは8文字以上で、英字の大文字・小文字・数字をすべて含む必要があります"
+      );
+      return;
+    }
 
     // パスワード確認
     if (formData.password !== formData.confirmPassword) {
@@ -170,11 +226,23 @@ const Register: React.FC = () => {
                   name="name_kana"
                   type="text"
                   required
-                  className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-juice-orange-500 focus:border-juice-orange-500 sm:text-sm"
+                  className={`appearance-none block w-full px-4 py-3 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none sm:text-sm ${
+                    validationErrors.name_kana
+                      ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+                      : "border-gray-300 focus:ring-juice-orange-500 focus:border-juice-orange-500"
+                  }`}
                   placeholder="例: ヤマダ タロウ"
                   value={formData.name_kana}
                   onChange={handleChange}
                 />
+                {validationErrors.name_kana && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {validationErrors.name_kana}
+                  </p>
+                )}
+                <p className="mt-1 text-xs text-gray-500">
+                  カタカナのみで入力してください
+                </p>
               </div>
 
               <div>
@@ -210,13 +278,22 @@ const Register: React.FC = () => {
                   type="password"
                   autoComplete="new-password"
                   required
-                  className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-juice-orange-500 focus:border-juice-orange-500 sm:text-sm"
+                  className={`appearance-none block w-full px-4 py-3 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none sm:text-sm ${
+                    validationErrors.password
+                      ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+                      : "border-gray-300 focus:ring-juice-orange-500 focus:border-juice-orange-500"
+                  }`}
                   placeholder="8文字以上の英数字"
                   value={formData.password}
                   onChange={handleChange}
                 />
+                {validationErrors.password && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {validationErrors.password}
+                  </p>
+                )}
                 <p className="mt-1 text-xs text-gray-500">
-                  8文字以上で、英字と数字を含めてください
+                  8文字以上で、英字の大文字・小文字・数字をすべて含めてください
                 </p>
               </div>
 

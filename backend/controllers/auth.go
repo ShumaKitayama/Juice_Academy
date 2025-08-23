@@ -6,7 +6,9 @@ import (
 	"juice_academy_backend/services"
 	"net/http"
 	"os"
+	"regexp"
 	"time"
+	"unicode"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
@@ -48,6 +50,37 @@ func InitUserCollection(client *mongo.Client) {
 	userCollection = client.Database("juice_academy").Collection("users")
 }
 
+// validateNameKana は氏名（カナ）のバリデーションを行う
+func validateNameKana(nameKana string) bool {
+	// カタカナ、半角スペース、全角スペースのみを許可
+	katakanaPattern := regexp.MustCompile(`^[ァ-ヶー\s　]+$`)
+	return katakanaPattern.MatchString(nameKana)
+}
+
+// validatePassword はパスワードのバリデーションを行う
+func validatePassword(password string) bool {
+	// 8文字以上
+	if len(password) < 8 {
+		return false
+	}
+	
+	var hasUpper, hasLower, hasDigit bool
+	
+	for _, char := range password {
+		switch {
+		case unicode.IsUpper(char):
+			hasUpper = true
+		case unicode.IsLower(char):
+			hasLower = true
+		case unicode.IsDigit(char):
+			hasDigit = true
+		}
+	}
+	
+	// 大文字、小文字、数字がすべて含まれている必要がある
+	return hasUpper && hasLower && hasDigit
+}
+
 // RegisterHandler はユーザー登録処理を行うハンドラ
 func RegisterHandler(c *gin.Context) {
 	var req struct {
@@ -60,6 +93,18 @@ func RegisterHandler(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "不正な入力データです"})
+		return
+	}
+
+	// 氏名（カナ）のバリデーション
+	if !validateNameKana(req.NameKana) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "氏名（カナ）はカタカナのみで入力してください"})
+		return
+	}
+
+	// パスワードのバリデーション
+	if !validatePassword(req.Password) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "パスワードは8文字以上で、英字の大文字・小文字・数字をすべて含む必要があります"})
 		return
 	}
 
