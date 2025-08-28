@@ -68,8 +68,9 @@ func InitPaymentCollection(client *mongo.Client) {
 		}
 	}
 
-	// Stripe APIキーの設定
-	stripe.Key = os.Getenv("STRIPE_API_KEY")
+    // Stripe APIキーの設定（秘密鍵を環境変数から取得）
+    // 環境変数名は .env.example / docker-compose と揃える
+    stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
 }
 
 // InitSubscriptionCollection はサブスクリプションコレクションを初期化
@@ -155,21 +156,19 @@ func CreateStripeCustomerHandler(c *gin.Context) {
 
 // SetupIntentHandler はカード登録用のSetupIntentを作成するハンドラ
 func SetupIntentHandler(c *gin.Context) {
-	var req struct {
-		UserID string `json:"userId" binding:"required"`
-	}
+    // 認証済みユーザーのIDをJWTから取得
+    userIDStr := c.GetString("user_id")
+    if userIDStr == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "認証が必要です"})
+        return
+    }
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "不正な入力データです"})
-		return
-	}
-
-	// ユーザーIDをObjectIDに変換
-	userID, err := primitive.ObjectIDFromHex(req.UserID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "不正なユーザーIDです"})
-		return
-	}
+    // ユーザーIDをObjectIDに変換
+    userID, err := primitive.ObjectIDFromHex(userIDStr)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "不正なユーザーIDです"})
+        return
+    }
 
 	// 支払い情報を取得
 	var payment Payment
@@ -200,22 +199,28 @@ func SetupIntentHandler(c *gin.Context) {
 
 // ConfirmSetupHandler はカード登録の確認と支払い方法の紐付けを行うハンドラ
 func ConfirmSetupHandler(c *gin.Context) {
-	var req struct {
-		UserID          string `json:"userId" binding:"required"`
-		PaymentMethodID string `json:"paymentMethodId" binding:"required"`
-	}
+    // 認証済みユーザーのIDをJWTから取得
+    userIDStr := c.GetString("user_id")
+    if userIDStr == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "認証が必要です"})
+        return
+    }
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "不正な入力データです"})
-		return
-	}
+    // リクエストボディ（支払い方法ID）を検証
+    var req struct {
+        PaymentMethodID string `json:"paymentMethodId" binding:"required"`
+    }
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "不正な入力データです"})
+        return
+    }
 
-	// ユーザーIDをObjectIDに変換
-	userID, err := primitive.ObjectIDFromHex(req.UserID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "不正なユーザーIDです"})
-		return
-	}
+    // ユーザーIDをObjectIDに変換
+    userID, err := primitive.ObjectIDFromHex(userIDStr)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "不正なユーザーIDです"})
+        return
+    }
 
 	// 支払い情報を取得
 	var payment Payment

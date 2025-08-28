@@ -100,27 +100,23 @@ func main() {
 		c.Next()
 	})
 
-	// 公開 API グループ
-	api := router.Group("/api")
-	{
-		api.POST("/register", controllers.RegisterHandler)
-		api.POST("/login", controllers.LoginHandler)
-		api.POST("/login-2fa", controllers.Login2FAHandler) // 2FA用ログイン
-		api.GET("/announcements", controllers.GetAnnouncementsHandler)
-		api.GET("/announcements/:id", controllers.GetAnnouncementByIdHandler)
+    // 公開 API グループ
+    api := router.Group("/api")
+    {
+        api.POST("/register", controllers.RegisterHandler)
+        api.POST("/login", controllers.LoginHandler)
+        api.POST("/login-2fa", controllers.Login2FAHandler) // 2FA用ログイン
+        api.GET("/announcements", controllers.GetAnnouncementsHandler)
+        api.GET("/announcements/:id", controllers.GetAnnouncementByIdHandler)
 
-		// 2FA関連のエンドポイント
-		api.POST("/otp/send", controllers.SendOTPHandler)
-		api.POST("/otp/verify", controllers.VerifyOTPHandler)
-		api.POST("/otp/resend", controllers.ResendOTPHandler)
+        // 2FA関連のエンドポイント
+        api.POST("/otp/send", controllers.SendOTPHandler)
+        api.POST("/otp/verify", controllers.VerifyOTPHandler)
+        api.POST("/otp/resend", controllers.ResendOTPHandler)
 
-		// Stripe決済情報登録のためのエンドポイント（フロントエンドからのアクセス用）
-		api.POST("/payment/setup-intent", controllers.SetupIntentHandler)
-		api.POST("/payment/confirm-setup", controllers.ConfirmSetupHandler)
-
-		// Stripe Webhookエンドポイント
-		api.POST("/webhook/stripe", controllers.StripeWebhookHandler)
-	}
+        // Stripe Webhookエンドポイント（Stripeのみが呼び出す）
+        api.POST("/webhook/stripe", controllers.StripeWebhookHandler)
+    }
 
 	// JWT 認証が必要な API グループ
 	protected := api.Group("/")
@@ -134,12 +130,15 @@ func main() {
 		protected.PUT("/announcements/:id", middleware.AdminRequired(), controllers.UpdateAnnouncementHandler)
 		protected.DELETE("/announcements/:id", middleware.AdminRequired(), controllers.DeleteAnnouncementHandler)
 
-		// 決済関連
-		protected.POST("/payment/customer", controllers.CreateStripeCustomerHandler)
-		protected.POST("/payment/subscription", controllers.CreateSubscriptionHandler)
-		protected.GET("/payment/history", controllers.PaymentHistoryHandler)
-		protected.GET("/payment/methods", controllers.GetPaymentMethodsHandler)
-		protected.DELETE("/payment/methods/:id", controllers.DeletePaymentMethodHandler)
+        // 決済関連（認証必須）
+        // SetupIntent 作成/確認は認証が必要。user_id はJWTから取得し、クライアントからの入力は信用しない
+        protected.POST("/payment/setup-intent", controllers.SetupIntentHandler)
+        protected.POST("/payment/confirm-setup", controllers.ConfirmSetupHandler)
+        protected.POST("/payment/customer", controllers.CreateStripeCustomerHandler)
+        protected.POST("/payment/subscription", controllers.CreateSubscriptionHandler)
+        protected.GET("/payment/history", controllers.PaymentHistoryHandler)
+        protected.GET("/payment/methods", controllers.GetPaymentMethodsHandler)
+        protected.DELETE("/payment/methods/:id", controllers.DeletePaymentMethodHandler)
 
 		// サブスクリプション関連
 		protected.GET("/subscription/status", controllers.GetSubscriptionStatusHandler)
