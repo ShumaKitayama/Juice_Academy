@@ -127,6 +127,9 @@ nginx/logs/
 # Output of the go coverage tool
 go.sum
 
+# Ensure backend/go.sum is tracked for dependency integrity
+!backend/go.sum
+
 # Go workspace file
 go.work
 
@@ -134,4 +137,3 @@ go.work
 vendor/
 
 # Go modules
-backend/go.sum

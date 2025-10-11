@@ -1,21 +1,21 @@
 package controllers
 
 import (
-	"context"
-	"fmt"
-	"juice_academy_backend/services"
-	"net/http"
-	"os"
+    "context"
+    "fmt"
+    "juice_academy_backend/services"
+    "net/http"
+    "os"
 	"regexp"
 	"time"
 	"unicode"
 
-	"github.com/dgrijalva/jwt-go"
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
+    jwt "github.com/golang-jwt/jwt/v5"
+    "github.com/gin-gonic/gin"
+    "github.com/google/uuid"
+    "go.mongodb.org/mongo-driver/bson"
+    "go.mongodb.org/mongo-driver/bson/primitive"
+    "go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -199,9 +199,11 @@ func LoginHandler(c *gin.Context) {
 		return
 	}
 
-	// デバッグ用にトークンの内容をログ出力
-	fmt.Printf("生成されたトークン情報: user_id=%s, email=%s, role=%s, isAdmin=%v\n",
-		user.ID.Hex(), user.Email, user.Role, user.IsAdmin)
+    // デバッグログは本番で出さない
+    if os.Getenv("APP_ENV") != "production" {
+        fmt.Printf("生成されたトークン情報(概要): user_id=%s, role=%s, isAdmin=%v\n",
+            user.ID.Hex(), user.Role, user.IsAdmin)
+    }
 
 	c.JSON(http.StatusOK, gin.H{
 		"token": tokenString,
@@ -286,6 +288,8 @@ func LogoutHandler(c *gin.Context) {
 		// エラーが発生してもログアウトは成功とする
 	}
 
-	fmt.Printf("ログアウト成功: jti=%s\n", jtiStr)
-	c.JSON(http.StatusOK, gin.H{"message": "ログアウトしました"})
+    if os.Getenv("APP_ENV") != "production" {
+        fmt.Printf("ログアウト成功: jti=%s\n", jtiStr)
+    }
+    c.JSON(http.StatusOK, gin.H{"message": "ログアウトしました"})
 }

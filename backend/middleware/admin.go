@@ -1,17 +1,17 @@
 package middleware
 
 import (
-	"context"
-	"fmt"
-	"net/http"
-	"os"
-	"strings"
+    "context"
+    "fmt"
+    "net/http"
+    "os"
+    "strings"
 
-	"github.com/dgrijalva/jwt-go"
-	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
+    jwt "github.com/golang-jwt/jwt/v5"
+    "github.com/gin-gonic/gin"
+    "go.mongodb.org/mongo-driver/bson"
+    "go.mongodb.org/mongo-driver/bson/primitive"
+    "go.mongodb.org/mongo-driver/mongo"
 )
 
 // userCollection はユーザー情報を格納するコレクション
@@ -56,23 +56,29 @@ func AdminRequired() gin.HandlerFunc {
 				// クレームの取得
 				if claims, ok := token.Claims.(jwt.MapClaims); ok {
 					// トークンに isAdmin=true が含まれていれば管理者として認証
-					if isAdmin, exists := claims["isAdmin"]; exists && isAdmin == true {
-						fmt.Printf("JWTトークンから管理者権限を確認: userID=%v, isAdmin=%v\n", userIDStr, isAdmin)
-						c.Next()
-						return
-					}
+                    if isAdmin, exists := claims["isAdmin"]; exists && isAdmin == true {
+                        if os.Getenv("APP_ENV") != "production" {
+                            fmt.Printf("JWTトークンから管理者権限を確認: userID=%v, isAdmin=%v\n", userIDStr, isAdmin)
+                        }
+                        c.Next()
+                        return
+                    }
 
-					// role=admin が含まれていても管理者として認証
-					if role, exists := claims["role"]; exists && role == "admin" {
-						fmt.Printf("JWTトークンから管理者ロールを確認: userID=%v, role=%v\n", userIDStr, role)
-						c.Next()
-						return
-					}
+                    // role=admin が含まれていても管理者として認証
+                    if role, exists := claims["role"]; exists && role == "admin" {
+                        if os.Getenv("APP_ENV") != "production" {
+                            fmt.Printf("JWTトークンから管理者ロールを確認: userID=%v, role=%v\n", userIDStr, role)
+                        }
+                        c.Next()
+                        return
+                    }
 
-					fmt.Printf("JWTトークン内容: %v\n", claims)
-				}
-			}
-		}
+                    if os.Getenv("APP_ENV") != "production" {
+                        fmt.Printf("JWTトークンに含まれるクレーム: %v\n", func() []string { ks := make([]string, 0, len(claims)); for k := range claims { ks = append(ks, k) }; return ks }())
+                    }
+                }
+            }
+        }
 
 		// MongoDB からユーザー情報を取得して確認（バックアップ方法）
 		userID, err := primitive.ObjectIDFromHex(userIDStr.(string))
@@ -96,7 +102,9 @@ func AdminRequired() gin.HandlerFunc {
 			return
 		}
 
-		fmt.Printf("データベースからユーザー情報を確認: userID=%v, isAdmin=%v, role=%v\n", userID, user.IsAdmin, user.Role)
+        if os.Getenv("APP_ENV") != "production" {
+            fmt.Printf("データベースからユーザー情報を確認: userID=%v, isAdmin=%v, role=%v\n", userID, user.IsAdmin, user.Role)
+        }
 
 		// isAdmin フラグまたは role=admin のどちらかを確認
 		if user.IsAdmin || user.Role == "admin" {

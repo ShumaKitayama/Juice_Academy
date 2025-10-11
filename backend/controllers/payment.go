@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"juice_academy_backend/utils"
 	"log"
 	"net/http"
 	"os"
@@ -17,6 +18,7 @@ import (
 	"github.com/stripe/stripe-go/v72/customer"
 	"github.com/stripe/stripe-go/v72/paymentmethod"
 	"github.com/stripe/stripe-go/v72/setupintent"
+	subscriptionapi "github.com/stripe/stripe-go/v72/sub"
 	"github.com/stripe/stripe-go/v72/webhook"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -26,6 +28,7 @@ import (
 var (
 	paymentCollection      *mongo.Collection
 	subscriptionCollection *mongo.Collection
+	stripeEventCollection  *mongo.Collection
 )
 
 // Payment はMongoDBのpaymentsコレクションのドキュメント構造
@@ -52,21 +55,32 @@ type Subscription struct {
 	UpdatedAt            time.Time          `bson:"updated_at" json:"updated_at"`
 }
 
+// StripeEvent はWebhook冪等性管理用のドキュメント構造
+type StripeEvent struct {
+	ID         primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	EventID    string             `bson:"event_id" json:"event_id"`
+	EventType  string             `bson:"event_type" json:"event_type"`
+	ReceivedAt time.Time          `bson:"received_at" json:"received_at"`
+}
+
 // InitPaymentCollection はペイメントコレクションを初期化
 func InitPaymentCollection(client *mongo.Client) {
-	paymentCollection = client.Database("juice_academy").Collection("payments")
+    paymentCollection = client.Database("juice_academy").Collection("payments")
 
-	// ルートディレクトリの.envファイルを読み込む
-	// 現在のディレクトリから親ディレクトリの.envを探す
-	rootEnvPath := filepath.Join("..", ".env")
-	err := godotenv.Load(rootEnvPath)
-	if err != nil {
-		// ルートパスが見つからない場合、カレントディレクトリの.envを試す
-		err = godotenv.Load()
-		if err != nil {
-			log.Println("Warning: .env file not found, using environment variables")
-		}
-	}
+    // 本番での.env読込は行わない（誤設定・流出防止）。開発時のみ許可。
+    if os.Getenv("APP_ENV") != "production" {
+        // ルートディレクトリの.envファイルを読み込む
+        // 現在のディレクトリから親ディレクトリの.envを探す
+        rootEnvPath := filepath.Join("..", ".env")
+        err := godotenv.Load(rootEnvPath)
+        if err != nil {
+            // ルートパスが見つからない場合、カレントディレクトリの.envを試す
+            err = godotenv.Load()
+            if err != nil {
+                log.Println("Warning: .env file not found, using environment variables")
+            }
+        }
+    }
 
     // Stripe APIキーの設定（秘密鍵を環境変数から取得）
     // 環境変数名は .env.example / docker-compose と揃える
@@ -76,6 +90,11 @@ func InitPaymentCollection(client *mongo.Client) {
 // InitSubscriptionCollection はサブスクリプションコレクションを初期化
 func InitSubscriptionCollection(client *mongo.Client) {
 	subscriptionCollection = client.Database("juice_academy").Collection("subscriptions")
+}
+
+// InitStripeEventCollection はStripeイベントコレクションを初期化（Webhook冪等性管理）
+func InitStripeEventCollection(client *mongo.Client) {
+	stripeEventCollection = client.Database("juice_academy").Collection("stripe_events")
 }
 
 // CreateStripeCustomerHandler はユーザー登録時にStripe顧客を作成するハンドラ
@@ -107,10 +126,9 @@ func CreateStripeCustomerHandler(c *gin.Context) {
 	var existingPayment Payment
 	err = paymentCollection.FindOne(ctx, bson.M{"user_id": userID}).Decode(&existingPayment)
 	if err == nil {
-		// 既に支払い情報が存在する場合
+		// 既に支払い情報が存在する場合（セキュリティ: customer_idは返さない）
 		c.JSON(http.StatusOK, gin.H{
 			"message":            "既に支払い情報が登録されています",
-			"stripe_customer_id": existingPayment.StripeCustomerID,
 			"has_payment_method": existingPayment.HasPaymentMethod,
 		})
 		return
@@ -128,6 +146,7 @@ func CreateStripeCustomerHandler(c *gin.Context) {
 
 	stripeCustomer, err := customer.New(params)
 	if err != nil {
+		utils.LogError("CreateStripeCustomer", err, "Failed to create Stripe customer")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Stripe顧客の作成に失敗しました"})
 		return
 	}
@@ -144,13 +163,15 @@ func CreateStripeCustomerHandler(c *gin.Context) {
 
 	_, err = paymentCollection.InsertOne(ctx, payment)
 	if err != nil {
+		utils.LogError("CreateStripeCustomer", err, "Failed to save payment info to DB")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "支払い情報の保存に失敗しました"})
 		return
 	}
 
+	// セキュリティ: stripe_customer_id は返さない（内部管理のみ）
+	utils.LogInfo("CreateStripeCustomer", "Customer created successfully for user: "+userID.Hex())
 	c.JSON(http.StatusCreated, gin.H{
-		"message":            "Stripe顧客情報を作成しました",
-		"stripe_customer_id": stripeCustomer.ID,
+		"message": "Stripe顧客情報を作成しました",
 	})
 }
 
@@ -231,123 +252,146 @@ func ConfirmSetupHandler(c *gin.Context) {
 		return
 	}
 
-	// 支払い情報を更新
-	update := bson.M{
-		"$set": bson.M{
-			"has_payment_method": true,
-			"updated_at":         time.Now(),
-		},
-	}
+    // Stripe上で支払い方法を顧客に紐づけ（既に付与済みでもOK）
+    // Attach
+    attachParams := &stripe.PaymentMethodAttachParams{
+        Customer: stripe.String(payment.StripeCustomerID),
+    }
+    if _, err := paymentmethod.Attach(req.PaymentMethodID, attachParams); err != nil {
+        // すでにアタッチ済みなら続行（単純化）。本番実装ではエラー判定を精査
+        utils.LogWarning("ConfirmSetup", "PaymentMethod attach error (continuing): "+err.Error())
+    }
 
-	_, err = paymentCollection.UpdateOne(ctx, bson.M{"user_id": userID}, update)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "支払い情報の更新に失敗しました"})
-		return
-	}
+    // Customerのデフォルト支払い方法に設定
+    custParams := &stripe.CustomerParams{}
+    custParams.InvoiceSettings = &stripe.CustomerInvoiceSettingsParams{DefaultPaymentMethod: stripe.String(req.PaymentMethodID)}
+    if _, err := customer.Update(payment.StripeCustomerID, custParams); err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "顧客設定の更新に失敗しました"})
+        return
+    }
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "支払い方法が正常に登録されました",
-	})
+    // DBを更新
+    update := bson.M{
+        "$set": bson.M{
+            "has_payment_method": true,
+            "updated_at":         time.Now(),
+        },
+    }
+    if _, err := paymentCollection.UpdateOne(ctx, bson.M{"user_id": userID}, update); err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "支払い情報の更新に失敗しました"})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{"message": "支払い方法が正常に登録されました"})
 }
 
 // CreateSubscriptionHandler はサブスクリプションを作成するハンドラ
 func CreateSubscriptionHandler(c *gin.Context) {
-	var req struct {
-		UserID  string `json:"userId" binding:"required"`
-		PriceID string `json:"priceId" binding:"required"`
-	}
+    var req struct {
+        PriceID string `json:"priceId" binding:"required"`
+    }
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "不正な入力データです"})
-		return
-	}
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "不正な入力データです"})
+        return
+    }
 
-	// ユーザーIDをObjectIDに変換
-	userID, err := primitive.ObjectIDFromHex(req.UserID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "不正なユーザーIDです"})
-		return
-	}
+    // ユーザーIDはJWTから取得（クライアントからの入力は信用しない）
+    userIDStr := c.GetString("user_id")
+    if userIDStr == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "認証が必要です"})
+        return
+    }
+    userID, err := primitive.ObjectIDFromHex(userIDStr)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "不正なユーザーIDです"})
+        return
+    }
 
-	// 支払い情報を取得
-	var payment Payment
-	ctx := context.Background()
-	err = paymentCollection.FindOne(ctx, bson.M{"user_id": userID}).Decode(&payment)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "支払い情報が見つかりません"})
-		return
-	}
+    // 許可された価格IDの検証（環境変数で制御可能）
+    if expected := os.Getenv("STRIPE_DEFAULT_PRICE_ID"); expected != "" && req.PriceID != expected {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "無効な価格IDです"})
+        return
+    }
 
-	// 支払い方法が登録されているか確認
-	if !payment.HasPaymentMethod {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "支払い方法が登録されていません"})
-		return
-	}
+    // 既存サブスクリプションを確認
+    var existingSub Subscription
+    ctx := context.Background()
+    err = subscriptionCollection.FindOne(ctx, bson.M{"user_id": userID}).Decode(&existingSub)
+    if err == nil && existingSub.Status == "active" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "既にアクティブなサブスクリプションがあります"})
+        return
+    }
 
-	// ユーザーの支払い方法を取得
-	params := &stripe.PaymentMethodListParams{
-		Customer: stripe.String(payment.StripeCustomerID),
-		Type:     stripe.String("card"),
-	}
-	iter := paymentmethod.List(params)
+    // 支払い情報を取得
+    var payment Payment
+    err = paymentCollection.FindOne(ctx, bson.M{"user_id": userID}).Decode(&payment)
+    if err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "支払い情報が見つかりません"})
+        return
+    }
 
-	// 支払い方法があるか確認
-	hasPaymentMethod := false
-	for iter.Next() {
-		hasPaymentMethod = true
-		break
-	}
+    // Stripe上の支払い方法確認（最低1件必要）
+    pmList := paymentmethod.List(&stripe.PaymentMethodListParams{Customer: stripe.String(payment.StripeCustomerID), Type: stripe.String("card")})
+    hasPM := pmList.Next()
+    if !hasPM {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "登録された支払い方法がありません"})
+        return
+    }
 
-	if !hasPaymentMethod {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "登録された支払い方法がありません"})
-		return
-	}
+    // Stripeでサブスクリプション作成
+    sparams := &stripe.SubscriptionParams{
+        Customer: stripe.String(payment.StripeCustomerID),
+        Items: []*stripe.SubscriptionItemsParams{
+            {Price: stripe.String(req.PriceID)},
+        },
+    }
+    // 決済動作と展開
+    sparams.PaymentBehavior = stripe.String("default_incomplete")
+    sparams.AddExpand("latest_invoice.payment_intent")
 
-	// 現在の時刻を取得
-	now := time.Now()
-	// 次回請求日（1ヶ月後）
-	nextBillingDate := now.AddDate(0, 1, 0)
+    // Idempotency key (user + price)
+    sparams.SetIdempotencyKey("sub-create:" + userID.Hex() + ":" + req.PriceID)
 
-	// サブスクリプション情報をDBに保存
-	newSubscription := Subscription{
-		UserID:               userID,
-		StripeCustomerID:     payment.StripeCustomerID,
-		StripeSubscriptionID: "sub_" + primitive.NewObjectID().Hex(), // 仮のサブスクリプションID
-		Status:               "active",
-		PriceID:              req.PriceID,
-		CurrentPeriodEnd:     nextBillingDate,
-		CancelAtPeriodEnd:    false,
-		CreatedAt:            now,
-		UpdatedAt:            now,
-	}
+    subRes, err := subscriptionapi.New(sparams)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "サブスクリプションの作成に失敗しました: " + err.Error()})
+        return
+    }
 
-	// 既存のサブスクリプションを確認
-	var existingSub Subscription
-	err = subscriptionCollection.FindOne(ctx, bson.M{"user_id": userID}).Decode(&existingSub)
-	if err == nil {
-		// 既存のサブスクリプションがある場合はエラー
-		c.JSON(http.StatusBadRequest, gin.H{"error": "既にアクティブなサブスクリプションがあります"})
-		return
-	}
+    now := time.Now()
+    // DBへ保存（作成結果に基づく）
+    newSub := Subscription{
+        UserID:               userID,
+        StripeCustomerID:     payment.StripeCustomerID,
+        StripeSubscriptionID: subRes.ID,
+        Status:               string(subRes.Status),
+        PriceID:              req.PriceID,
+        CurrentPeriodEnd:     time.Unix(subRes.CurrentPeriodEnd, 0),
+        CancelAtPeriodEnd:    subRes.CancelAtPeriodEnd,
+        CreatedAt:            now,
+        UpdatedAt:            now,
+    }
+    if _, err := subscriptionCollection.InsertOne(ctx, newSub); err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "サブスクリプション情報の保存に失敗しました: " + err.Error()})
+        return
+    }
 
-	// 新規サブスクリプションを作成
-	_, err = subscriptionCollection.InsertOne(ctx, newSubscription)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "サブスクリプション情報の保存に失敗しました: " + err.Error()})
-		return
-	}
-
-	// 成功レスポンスを返す
-	c.JSON(http.StatusOK, gin.H{
-		"message": "サブスクリプションが正常に作成されました",
-		"subscription": gin.H{
-			"id":                 newSubscription.ID.Hex(),
-			"status":             newSubscription.Status,
-			"current_period_end": newSubscription.CurrentPeriodEnd,
-		},
-		// フロントエンドでリダイレクトするためのURL
-		"redirect": "/subscription/success",
-	})
+    // レスポンス: 必要ならフロントでPaymentIntentを処理可能
+    resp := gin.H{
+        "message": "サブスクリプションが正常に作成されました",
+        "subscription": gin.H{
+            "id":                  newSub.StripeSubscriptionID,
+            "status":              newSub.Status,
+            "current_period_end":  newSub.CurrentPeriodEnd,
+            "cancel_at_period_end": newSub.CancelAtPeriodEnd,
+        },
+        "redirect": "/subscription/success",
+    }
+    if subRes.LatestInvoice != nil && subRes.LatestInvoice.PaymentIntent != nil {
+        resp["payment_intent_client_secret"] = subRes.LatestInvoice.PaymentIntent.ClientSecret
+    }
+    c.JSON(http.StatusOK, resp)
 }
 
 // PaymentHistoryHandler は決済履歴を取得するハンドラ
@@ -606,6 +650,7 @@ func StripeWebhookHandler(c *gin.Context) {
 	// リクエストボディを読み込む
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
+		utils.LogError("StripeWebhook", err, "Failed to read request body")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "リクエストボディの読み込みに失敗しました"})
 		return
 	}
@@ -613,16 +658,44 @@ func StripeWebhookHandler(c *gin.Context) {
 	// Webhookシークレットを環境変数から取得
 	webhookSecret := os.Getenv("STRIPE_WEBHOOK_SECRET")
 	if webhookSecret == "" {
+		utils.LogError("StripeWebhook", err, "Webhook secret not configured")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Webhookシークレットが設定されていません"})
 		return
 	}
 
 	// イベントを検証
+	// セキュリティ強化: 署名検証によりなりすましWebhookを防止
+	// stripe-go v72 では ConstructEvent がデフォルトで5分のtoleranceを持つ
 	event, err := webhook.ConstructEvent(body, c.GetHeader("Stripe-Signature"), webhookSecret)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Webhookの署名検証に失敗しました: " + err.Error()})
+		utils.LogError("StripeWebhook", err, "Webhook signature verification failed")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Webhookの署名検証に失敗しました"})
 		return
 	}
+
+	// 冪等性チェック: 同じイベントIDが既に処理されていないか確認
+	ctx := context.Background()
+	stripeEvent := StripeEvent{
+		EventID:    event.ID,
+		EventType:  string(event.Type),
+		ReceivedAt: time.Now(),
+	}
+	
+	_, err = stripeEventCollection.InsertOne(ctx, stripeEvent)
+	if err != nil {
+		// duplicate key error の場合は既に処理済み
+		if mongo.IsDuplicateKeyError(err) {
+			utils.LogInfo("StripeWebhook", "Event already processed: "+event.ID)
+			c.JSON(http.StatusOK, gin.H{"received": true, "message": "already processed"})
+			return
+		}
+		// その他のエラー
+		utils.LogError("StripeWebhook", err, "Failed to record event")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "イベント記録に失敗しました"})
+		return
+	}
+
+	utils.LogInfo("StripeWebhook", "Processing event: "+event.ID+" type: "+string(event.Type))
 
 	// イベントタイプに応じて処理を分岐
 	switch event.Type {
@@ -631,6 +704,7 @@ func StripeWebhookHandler(c *gin.Context) {
 		var checkoutSession stripe.CheckoutSession
 		err := json.Unmarshal(event.Data.Raw, &checkoutSession)
 		if err != nil {
+			utils.LogError("StripeWebhook", err, "Failed to parse checkout session data")
 			c.JSON(http.StatusBadRequest, gin.H{"error": "イベントデータの解析に失敗しました"})
 			return
 		}
@@ -640,7 +714,7 @@ func StripeWebhookHandler(c *gin.Context) {
 			// ユーザーIDを取得
 			userID, err := primitive.ObjectIDFromHex(checkoutSession.ClientReferenceID)
 			if err != nil {
-				log.Printf("不正なユーザーID: %v", err)
+				utils.LogError("StripeWebhook", err, "Invalid user ID in checkout session")
 				c.JSON(http.StatusOK, gin.H{"received": true}) // エラーでもStripeには200を返す
 				return
 			}
@@ -687,7 +761,7 @@ func StripeWebhookHandler(c *gin.Context) {
 			}
 
 			if err != nil {
-				log.Printf("サブスクリプション情報の保存に失敗: %v", err)
+				utils.LogError("StripeWebhook", err, "Failed to save subscription info")
 			}
 		}
 
@@ -696,12 +770,12 @@ func StripeWebhookHandler(c *gin.Context) {
 		var sub stripe.Subscription
 		err := json.Unmarshal(event.Data.Raw, &sub)
 		if err != nil {
+			utils.LogError("StripeWebhook", err, "Failed to parse subscription data")
 			c.JSON(http.StatusBadRequest, gin.H{"error": "イベントデータの解析に失敗しました"})
 			return
 		}
 
 		// DBからサブスクリプションを検索
-		ctx := context.Background()
 		update := bson.M{
 			"$set": bson.M{
 				"status":               string(sub.Status),
@@ -712,7 +786,7 @@ func StripeWebhookHandler(c *gin.Context) {
 		}
 		_, err = subscriptionCollection.UpdateOne(ctx, bson.M{"stripe_subscription_id": sub.ID}, update)
 		if err != nil {
-			log.Printf("サブスクリプション情報の更新に失敗: %v", err)
+			utils.LogError("StripeWebhook", err, "Failed to update subscription")
 		}
 
 	case "customer.subscription.deleted":
@@ -720,12 +794,12 @@ func StripeWebhookHandler(c *gin.Context) {
 		var sub stripe.Subscription
 		err := json.Unmarshal(event.Data.Raw, &sub)
 		if err != nil {
+			utils.LogError("StripeWebhook", err, "Failed to parse subscription data")
 			c.JSON(http.StatusBadRequest, gin.H{"error": "イベントデータの解析に失敗しました"})
 			return
 		}
 
 		// DBからサブスクリプションを更新
-		ctx := context.Background()
 		update := bson.M{
 			"$set": bson.M{
 				"status":     "canceled",
@@ -734,7 +808,7 @@ func StripeWebhookHandler(c *gin.Context) {
 		}
 		_, err = subscriptionCollection.UpdateOne(ctx, bson.M{"stripe_subscription_id": sub.ID}, update)
 		if err != nil {
-			log.Printf("サブスクリプション情報の更新に失敗: %v", err)
+			utils.LogError("StripeWebhook", err, "Failed to update subscription status")
 		}
 	}
 
@@ -767,9 +841,17 @@ func CancelSubscriptionHandler(c *gin.Context) {
 		return
 	}
 
-	// Stripeでサブスクリプションをキャンセル（次回更新時）
-	// 注意: 実際の実装ではStripe APIを使用してサブスクリプションをキャンセルする必要があります
-	// ここではDBの更新のみを行います
+    // Stripeでサブスクリプションをキャンセル（次回更新時）
+    // 実API呼び出しにより生産相当の挙動に近づける
+    if sub.StripeSubscriptionID != "" {
+        params := &stripe.SubscriptionParams{
+            CancelAtPeriodEnd: stripe.Bool(true),
+        }
+        // Idempotency for safety
+        params.SetIdempotencyKey("sub-cancel:" + sub.StripeSubscriptionID)
+        // Use API to mark cancel at period end
+        _, _ = subscriptionapi.Update(sub.StripeSubscriptionID, params)
+    }
 
 	// DBのサブスクリプション情報を更新
 	update := bson.M{
@@ -780,7 +862,7 @@ func CancelSubscriptionHandler(c *gin.Context) {
 	}
 	_, err = subscriptionCollection.UpdateOne(ctx, bson.M{"user_id": userID}, update)
 	if err != nil {
-		log.Printf("サブスクリプション情報の更新に失敗: %v", err)
+		utils.LogError("CancelSubscription", err, "Failed to update subscription cancellation status")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "サブスクリプション情報の更新に失敗しました"})
 		return
 	}

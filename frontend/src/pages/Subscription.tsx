@@ -71,7 +71,6 @@ const Subscription: React.FC = () => {
 
       // サブスクリプションを作成（既存のカード情報を使用）
       const response = await paymentAPI.createSubscription(
-        user.id,
         selectedPlanInfo.priceId
       );
 

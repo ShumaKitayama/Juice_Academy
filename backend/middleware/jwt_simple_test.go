@@ -1,16 +1,16 @@
 package middleware
 
 import (
-	"net/http"
-	"net/http/httptest"
-	"os"
-	"strings"
-	"testing"
-	"time"
+    "net/http"
+    "net/http/httptest"
+    "os"
+    "strings"
+    "testing"
+    "time"
 
-	"github.com/dgrijalva/jwt-go"
-	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/assert"
+    jwt "github.com/golang-jwt/jwt/v5"
+    "github.com/gin-gonic/gin"
+    "github.com/stretchr/testify/assert"
 )
 
 // setupJWTTestRouter はJWTテスト用のGinルーターを作成する
@@ -182,4 +182,3 @@ func TestJWTAuthMiddlewareEdgeCases(t *testing.T) {
 		})
 	}
 }
-

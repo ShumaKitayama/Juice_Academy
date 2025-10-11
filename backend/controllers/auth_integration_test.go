@@ -49,8 +49,9 @@ func (suite *AuthIntegrationSuite) SetupSuite() {
 	suite.client = client
 	suite.database = client.Database("juice_academy_test")
 
-	// コレクションを初期化
-	InitUserCollection(client)
+	// テスト用のコレクションを初期化
+	// userCollectionをテストデータベースに設定
+	userCollection = suite.database.Collection("users")
 
 	// クリーンアップ関数を設定
 	suite.cleanup = func() {
@@ -165,7 +166,7 @@ func (suite *AuthIntegrationSuite) TestAdminUserIntegration() {
 	}
 
 	// 管理者ユーザー作成機能をテスト
-	SeedAdminUser(suite.database)
+	SeedAdminUser()
 
 	// 管理者ユーザーが正しく作成されているか確認
 	collection := suite.database.Collection("users")
@@ -177,7 +178,7 @@ func (suite *AuthIntegrationSuite) TestAdminUserIntegration() {
 	assert.Equal(suite.T(), "admin@example.com", adminUser.Email, "デフォルトの管理者メール")
 
 	// 冪等性のテスト（2回実行しても管理者は1人だけ）
-	SeedAdminUser(suite.database)
+	SeedAdminUser()
 	
 	count, err := collection.CountDocuments(context.Background(), bson.M{"is_admin": true})
 	assert.NoError(suite.T(), err)

@@ -31,8 +31,16 @@ services:
     restart: always
     ports:
       - "27017:27017"
+    environment:
+      # MongoDB認証有効化（セキュリティ強化）
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-changeme}
+      MONGO_INITDB_DATABASE: juice_academy
     volumes:
       - mongo_data:/data/db
+      - ./mongo-init:/docker-entrypoint-initdb.d:ro
+    command: ["--auth", "--bind_ip_all"]
+    # セキュリティ: 本番環境では bind_ip を制限することを推奨
 
   redis:
     image: redis:alpine

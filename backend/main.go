@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -40,79 +41,102 @@ func main() {
 	controllers.InitUserCollection(dbClient)
 	controllers.InitPaymentCollection(dbClient)
 	controllers.InitSubscriptionCollection(dbClient)
+	controllers.InitStripeEventCollection(dbClient) // Webhook冪等性管理用
 	controllers.InitAnnouncementCollection(db) // お知らせコレクションの初期化を追加
 	controllers.InitOTPCollection(db) // OTPコレクションの初期化を追加
 	middleware.InitUserCollection(db)
 
 	// 管理者ユーザーの作成（本番環境では初回のみ、または環境変数で制御）
 	if os.Getenv("APP_ENV") != "production" || os.Getenv("SEED_ADMIN_USER") == "true" {
-		controllers.SeedAdminUser(db)
+		controllers.SeedAdminUser()
 	}
 
 	router := gin.Default()
 
-	// 本番環境向けCORS設定
-	router.Use(func(c *gin.Context) {
-		origin := c.Request.Header.Get("Origin")
-		
-		// 本番環境では特定のオリジンのみ許可
-		if os.Getenv("APP_ENV") == "production" {
-			allowedOrigins := strings.Split(corsAllowedOrigins, ",")
-			originAllowed := false
-			for _, allowedOrigin := range allowedOrigins {
-				if origin == strings.TrimSpace(allowedOrigin) {
-					c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
-					originAllowed = true
-					break
-				}
-			}
-			// 許可されていないオリジンの場合はデフォルト値を設定しない
-			if !originAllowed && corsAllowedOrigins != "*" {
-				// オリジンが許可されていない場合はCORSヘッダーを設定しない
-			} else if corsAllowedOrigins == "*" {
-				c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-			}
-		} else {
-			// 開発環境では全てのオリジンを許可
-			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		}
+    // CORS設定（Allow-Credentialsとワイルドカードの非併用を徹底）
+    router.Use(func(c *gin.Context) {
+        origin := c.Request.Header.Get("Origin")
+        allowOrigin := ""
+        allowCreds := false
 
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+        if os.Getenv("APP_ENV") == "production" {
+            if corsAllowedOrigins != "" && corsAllowedOrigins != "*" {
+                for _, o := range strings.Split(corsAllowedOrigins, ",") {
+                    if origin == strings.TrimSpace(o) {
+                        allowOrigin = origin
+                        allowCreds = true // 明示許可時のみCredentials許可
+                        break
+                    }
+                }
+            }
+            // production で "*" は非推奨。どうしても必要なら allowCreds は付けない
+            if corsAllowedOrigins == "*" {
+                allowOrigin = "*"
+                allowCreds = false
+            }
+        } else {
+            // 開発環境: デフォルトでワイルドカードを許可（Credentialsは付けない）
+            if corsAllowedOrigins == "*" || corsAllowedOrigins == "" {
+                allowOrigin = "*"
+                allowCreds = false
+            } else {
+                for _, o := range strings.Split(corsAllowedOrigins, ",") {
+                    if origin == strings.TrimSpace(o) {
+                        allowOrigin = origin
+                        allowCreds = true
+                        break
+                    }
+                }
+            }
+        }
 
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
-			return
-		}
+        if allowOrigin != "" {
+            c.Writer.Header().Set("Access-Control-Allow-Origin", allowOrigin)
+            c.Writer.Header().Set("Vary", "Origin")
+        }
+        c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+        c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+        if allowCreds {
+            c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+        }
 
-		c.Next()
-	})
+        if c.Request.Method == "OPTIONS" {
+            c.AbortWithStatus(204)
+            return
+        }
+
+        c.Next()
+    })
 
 	// セキュリティヘッダーの追加
-	router.Use(func(c *gin.Context) {
-		c.Writer.Header().Set("X-Content-Type-Options", "nosniff")
-		c.Writer.Header().Set("X-Frame-Options", "DENY")
-		c.Writer.Header().Set("X-XSS-Protection", "1; mode=block")
-		if os.Getenv("APP_ENV") == "production" {
-			c.Writer.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
-		}
-		c.Next()
-	})
+    router.Use(func(c *gin.Context) {
+        c.Writer.Header().Set("X-Content-Type-Options", "nosniff")
+        c.Writer.Header().Set("X-Frame-Options", "DENY")
+        c.Writer.Header().Set("X-XSS-Protection", "1; mode=block")
+        if os.Getenv("APP_ENV") == "production" {
+            c.Writer.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+        }
+        // 追加推奨ヘッダー
+        c.Writer.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+        c.Writer.Header().Set("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
+        c.Writer.Header().Set("Cross-Origin-Opener-Policy", "same-origin")
+        c.Writer.Header().Set("Cross-Origin-Resource-Policy", "same-origin")
+        c.Next()
+    })
 
     // 公開 API グループ
     api := router.Group("/api")
     {
         api.POST("/register", controllers.RegisterHandler)
-        api.POST("/login", controllers.LoginHandler)
-        api.POST("/login-2fa", controllers.Login2FAHandler) // 2FA用ログイン
+        api.POST("/login", middleware.RateLimit("login", 10, time.Minute), controllers.LoginHandler)
+        api.POST("/login-2fa", middleware.RateLimit("login2fa", 10, time.Minute), controllers.Login2FAHandler) // 2FA用ログイン
         api.GET("/announcements", controllers.GetAnnouncementsHandler)
         api.GET("/announcements/:id", controllers.GetAnnouncementByIdHandler)
 
         // 2FA関連のエンドポイント
-        api.POST("/otp/send", controllers.SendOTPHandler)
-        api.POST("/otp/verify", controllers.VerifyOTPHandler)
-        api.POST("/otp/resend", controllers.ResendOTPHandler)
+        api.POST("/otp/send", middleware.RateLimit("otp_send", 5, time.Minute), controllers.SendOTPHandler)
+        api.POST("/otp/verify", middleware.RateLimit("otp_verify", 10, time.Minute), controllers.VerifyOTPHandler)
+        api.POST("/otp/resend", middleware.RateLimit("otp_resend", 3, time.Minute), controllers.ResendOTPHandler)
 
         // Stripe Webhookエンドポイント（Stripeのみが呼び出す）
         api.POST("/webhook/stripe", controllers.StripeWebhookHandler)
@@ -132,10 +156,10 @@ func main() {
 
         // 決済関連（認証必須）
         // SetupIntent 作成/確認は認証が必要。user_id はJWTから取得し、クライアントからの入力は信用しない
-        protected.POST("/payment/setup-intent", controllers.SetupIntentHandler)
-        protected.POST("/payment/confirm-setup", controllers.ConfirmSetupHandler)
-        protected.POST("/payment/customer", controllers.CreateStripeCustomerHandler)
-        protected.POST("/payment/subscription", controllers.CreateSubscriptionHandler)
+        protected.POST("/payment/setup-intent", middleware.RateLimit("setup_intent", 20, time.Minute), controllers.SetupIntentHandler)
+        protected.POST("/payment/confirm-setup", middleware.RateLimit("confirm_setup", 20, time.Minute), controllers.ConfirmSetupHandler)
+        protected.POST("/payment/customer", middleware.RateLimit("create_customer", 10, time.Minute), controllers.CreateStripeCustomerHandler)
+        protected.POST("/payment/subscription", middleware.RateLimit("create_subscription", 10, time.Minute), controllers.CreateSubscriptionHandler)
         protected.GET("/payment/history", controllers.PaymentHistoryHandler)
         protected.GET("/payment/methods", controllers.GetPaymentMethodsHandler)
         protected.DELETE("/payment/methods/:id", controllers.DeletePaymentMethodHandler)
