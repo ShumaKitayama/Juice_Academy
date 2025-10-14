@@ -6,10 +6,7 @@ WORKDIR /app
 # パッケージファイルをコピー
 COPY package*.json ./
 
-# 依存関係をインストール（本番用のみ）
-RUN npm ci --only=production --silent
-
-# 開発用依存関係も一時的にインストール（ビルドに必要）
+# 依存関係をインストール
 RUN npm ci --silent
 
 # ソースコードをコピー
@@ -18,35 +15,29 @@ COPY . .
 # 本番用ビルド
 RUN npm run build
 
-# Nginx本番環境
-FROM nginx:alpine
+# 本番環境 - シンプルなNode.jsサーバー
+FROM node:18-alpine
 
-# 不要なファイルを削除
-RUN rm -rf /usr/share/nginx/html/*
+WORKDIR /app
+
+# serve パッケージをグローバルにインストール
+RUN npm install -g serve
 
 # ビルド済みファイルをコピー
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=builder /app/dist /app/dist
 
-# Nginx設定をコピー
-COPY nginx.conf /etc/nginx/nginx.conf
+# 非rootユーザーで実行
+RUN adduser -D -s /bin/sh nodeuser && \
+    chown -R nodeuser:nodeuser /app
 
-# 非rootユーザーで実行するための設定
-RUN adduser -D -s /bin/sh nginxuser && \
-    chown -R nginxuser:nginxuser /var/cache/nginx && \
-    chown -R nginxuser:nginxuser /var/log/nginx && \
-    chown -R nginxuser:nginxuser /etc/nginx/conf.d && \
-    touch /var/run/nginx.pid && \
-    chown -R nginxuser:nginxuser /var/run/nginx.pid && \
-    chown -R nginxuser:nginxuser /usr/share/nginx/html
+USER nodeuser
 
 # ポートを公開
-EXPOSE 80 443
+EXPOSE 3000
 
 # ヘルスチェックを追加
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost/ || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
 
-# 非rootユーザーで実行
-USER nginxuser
-
-CMD ["nginx", "-g", "daemon off;"]
+# serveで静的ファイルを配信
+CMD ["serve", "-s", "dist", "-l", "3000"]

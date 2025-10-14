@@ -33,8 +33,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.prod
     ports:
-      - "80:80"
-      - "443:443"
+      - "3000:3000"
     environment:
       - NODE_ENV=production
       - VITE_API_URL=${FRONTEND_URL}/api
@@ -42,8 +41,6 @@ services:
     restart: unless-stopped
     networks:
       - juice_academy_network
-    volumes:
-      - ./ssl:/etc/ssl/certs:ro
 
   mongodb:
     image: mongo:6.0
@@ -61,23 +58,6 @@ services:
     # 本番環境ではMongoDBを外部に公開しない
     # ports:
     #   - "27017:27017"
-
-  # Nginxリバースプロキシ（推奨）
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./ssl:/etc/ssl/certs:ro
-      - ./nginx/logs:/var/log/nginx
-    depends_on:
-      - backend
-      - frontend
-    restart: unless-stopped
-    networks:
-      - juice_academy_network
 
 volumes:
   mongodb_data:
