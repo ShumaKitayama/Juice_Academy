@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -252,21 +253,35 @@ func ConfirmSetupHandler(c *gin.Context) {
 		return
 	}
 
-    // Stripe上で支払い方法を顧客に紐づけ（既に付与済みでもOK）
-    // Attach
+    // Stripe上で支払い方法を顧客に紐づけ
+    // Attachが成功しない限り、デフォルト設定には進まない（アトミック性を保証）
     attachParams := &stripe.PaymentMethodAttachParams{
         Customer: stripe.String(payment.StripeCustomerID),
     }
-    if _, err := paymentmethod.Attach(req.PaymentMethodID, attachParams); err != nil {
-        // すでにアタッチ済みなら続行（単純化）。本番実装ではエラー判定を精査
-        utils.LogWarning("ConfirmSetup", "PaymentMethod attach error (continuing): "+err.Error())
+    _, err = paymentmethod.Attach(req.PaymentMethodID, attachParams)
+    if err != nil {
+        // 既にアタッチ済みの場合のみ続行を許可
+        errorMsg := strings.ToLower(err.Error())
+        isAlreadyAttached := strings.Contains(errorMsg, "already attached") || 
+                            strings.Contains(errorMsg, "already exists")
+        
+        if !isAlreadyAttached {
+            // アタッチに失敗した場合はエラーを返す（アトミック性を保証）
+            utils.LogError("ConfirmSetup", err, "Failed to attach payment method to customer")
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "支払い方法の紐付けに失敗しました"})
+            return
+        }
+        
+        // すでにアタッチ済みの場合は警告ログを出力して続行
+        utils.LogWarning("ConfirmSetup", "PaymentMethod already attached, continuing")
     }
 
-    // Customerのデフォルト支払い方法に設定
+    // Attachが成功した（または既にアタッチ済み）場合のみ、デフォルト支払い方法に設定
     custParams := &stripe.CustomerParams{}
     custParams.InvoiceSettings = &stripe.CustomerInvoiceSettingsParams{DefaultPaymentMethod: stripe.String(req.PaymentMethodID)}
     if _, err := customer.Update(payment.StripeCustomerID, custParams); err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "顧客設定の更新に失敗しました"})
+        utils.LogError("ConfirmSetup", err, "Failed to update customer default payment method")
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "デフォルト支払い方法の設定に失敗しました"})
         return
     }
 
