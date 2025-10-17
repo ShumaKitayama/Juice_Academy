@@ -53,6 +53,26 @@ func main() {
 
 	router := gin.Default()
 
+	// /api が重複したパスを正規化する（例: /api/api/login -> /api/login）
+	// 既存のフロントキャッシュや誤設定からのリクエストを吸収
+	router.NoRoute(func(c *gin.Context) {
+		p := c.Request.URL.Path
+		// すべての重複 /api を単一の /api に縮約
+		for strings.Contains(p, "/api/api") {
+			p = strings.ReplaceAll(p, "/api/api", "/api")
+		}
+		if p != c.Request.URL.Path {
+			if os.Getenv("APP_ENV") != "production" {
+				log.Printf("[PathNormalizer] Rewrite %s -> %s", c.Request.URL.Path, p)
+			}
+			c.Request.URL.Path = p
+			// リライト後のルーティングを再実行
+			router.HandleContext(c)
+			return
+		}
+		c.JSON(404, gin.H{"error": "not found"})
+	})
+
     // CORS設定（Allow-Credentialsとワイルドカードの非併用を徹底）
     router.Use(func(c *gin.Context) {
         origin := c.Request.Header.Get("Origin")

@@ -50,7 +50,7 @@ const Login: React.FC = () => {
     try {
       if (use2FA) {
         // 2段階認証付きログイン
-        const loginResponse = await fetch(`${getApiUrl()}/api/login-2fa`, {
+        const loginResponse = await fetch(`${getApiUrl()}/login-2fa`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -65,7 +65,7 @@ const Login: React.FC = () => {
         }
 
         // パスワード認証が成功した場合、OTPを送信
-        const otpResponse = await fetch(`${getApiUrl()}/api/otp/send`, {
+        const otpResponse = await fetch(`${getApiUrl()}/otp/send`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -88,7 +88,7 @@ const Login: React.FC = () => {
         });
       } else {
         // 従来のログイン処理（2FAなし）
-        const loginResponse = await fetch(`${getApiUrl()}/api/login`, {
+        const loginResponse = await fetch(`${getApiUrl()}/login`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

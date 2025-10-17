@@ -1,10 +1,10 @@
 // 環境設定の管理
 export const config = {
   apiUrl:
-    import.meta.env.VITE_API_URL ||
-    (import.meta.env.MODE === "production"
-      ? `${window.location.origin}`
-      : "http://localhost:8080"),
+    (import.meta.env.VITE_API_URL ||
+      (import.meta.env.MODE === "production"
+        ? `${window.location.origin}`
+        : "http://localhost:8080")) + "/api",
 
   stripePublishableKey: import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "",
 

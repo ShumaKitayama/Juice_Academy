@@ -199,21 +199,56 @@ const PaymentSetup: React.FC = () => {
 
           <div className="mt-6 pt-4 border-t border-gray-200">
             <div className="flex justify-center space-x-6">
-              <img
-                src="https://cdn.jsdelivr.net/gh/creativetimofficial/public-assets@master/soft-ui-design-system/assets/img/logos/visa.png"
-                alt="visa"
-                className="h-8"
-              />
-              <img
-                src="https://cdn.jsdelivr.net/gh/creativetimofficial/public-assets@master/soft-ui-design-system/assets/img/logos/mastercard.png"
-                alt="mastercard"
-                className="h-8"
-              />
-              <img
-                src="https://cdn.jsdelivr.net/gh/creativetimofficial/public-assets@master/soft-ui-design-system/assets/img/logos/amex.png"
-                alt="amex"
-                className="h-8"
-              />
+              <svg
+                className="h-8 w-12"
+                viewBox="0 0 48 32"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <rect width="48" height="32" rx="4" fill="#1434CB" />
+                <text
+                  x="50%"
+                  y="50%"
+                  dominantBaseline="middle"
+                  textAnchor="middle"
+                  fill="white"
+                  fontFamily="Arial"
+                  fontSize="10"
+                  fontWeight="bold"
+                >
+                  VISA
+                </text>
+              </svg>
+              <svg
+                className="h-8 w-12"
+                viewBox="0 0 48 32"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <rect width="48" height="32" rx="4" fill="#EB001B" />
+                <circle cx="18" cy="16" r="8" fill="#EB001B" />
+                <circle cx="30" cy="16" r="8" fill="#F79E1B" />
+              </svg>
+              <svg
+                className="h-8 w-12"
+                viewBox="0 0 48 32"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <rect width="48" height="32" rx="4" fill="#006FCF" />
+                <text
+                  x="50%"
+                  y="50%"
+                  dominantBaseline="middle"
+                  textAnchor="middle"
+                  fill="white"
+                  fontFamily="Arial"
+                  fontSize="8"
+                  fontWeight="bold"
+                >
+                  AMEX
+                </text>
+              </svg>
             </div>
             <p className="text-center text-xs text-gray-500 mt-4">
               主要なクレジットカードがご利用いただけます

@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"juice_academy_backend/utils"
 	"log"
@@ -333,9 +334,33 @@ func CreateSubscriptionHandler(c *gin.Context) {
     var existingSub Subscription
     ctx := context.Background()
     err = subscriptionCollection.FindOne(ctx, bson.M{"user_id": userID}).Decode(&existingSub)
-    if err == nil && existingSub.Status == "active" {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "既にアクティブなサブスクリプションがあります"})
-        return
+    if err == nil {
+        // アクティブまたは試用期間中のサブスクリプションがある場合はエラー
+        if existingSub.Status == "active" || existingSub.Status == "trialing" {
+            utils.LogWarning("CreateSubscription", "User already has an active subscription: "+existingSub.StripeSubscriptionID)
+            c.JSON(http.StatusBadRequest, gin.H{"error": "既にアクティブなサブスクリプションがあります"})
+            return
+        }
+        // 不完全またはキャンセル済みのサブスクリプションがある場合は削除
+        if existingSub.Status == "incomplete" || existingSub.Status == "canceled" || existingSub.Status == "incomplete_expired" {
+            utils.LogInfo("CreateSubscription", "Removing old subscription with status: "+existingSub.Status)
+            
+            // Stripe上でもサブスクリプションをキャンセル
+            if existingSub.StripeSubscriptionID != "" {
+                _, cancelErr := subscriptionapi.Cancel(existingSub.StripeSubscriptionID, nil)
+                if cancelErr != nil {
+                    utils.LogWarning("CreateSubscription", "Failed to cancel old subscription on Stripe: "+cancelErr.Error())
+                } else {
+                    utils.LogInfo("CreateSubscription", "Canceled old subscription on Stripe: "+existingSub.StripeSubscriptionID)
+                }
+            }
+            
+            // DBから削除
+            _, delErr := subscriptionCollection.DeleteOne(ctx, bson.M{"user_id": userID})
+            if delErr != nil {
+                utils.LogWarning("CreateSubscription", "Failed to delete old subscription from DB: "+delErr.Error())
+            }
+        }
     }
 
     // 支払い情報を取得
@@ -361,15 +386,18 @@ func CreateSubscriptionHandler(c *gin.Context) {
             {Price: stripe.String(req.PriceID)},
         },
     }
-    // 決済動作と展開
-    sparams.PaymentBehavior = stripe.String("default_incomplete")
+    // 支払い方法が不完全な場合はエラーを返す（デフォルト支払い方法が設定済みなのですぐにアクティブになる）
+    sparams.PaymentBehavior = stripe.String("error_if_incomplete")
     sparams.AddExpand("latest_invoice.payment_intent")
 
-    // Idempotency key (user + price)
-    sparams.SetIdempotencyKey("sub-create:" + userID.Hex() + ":" + req.PriceID)
+    // Idempotency key (user + price + timestamp for uniqueness)
+    // タイムスタンプを含めることで、パラメータ変更後も新しいリクエストとして扱われる
+    idempotencyKey := fmt.Sprintf("sub-create-v2:%s:%s:%d", userID.Hex(), req.PriceID, time.Now().Unix())
+    sparams.SetIdempotencyKey(idempotencyKey)
 
     subRes, err := subscriptionapi.New(sparams)
     if err != nil {
+        utils.LogError("CreateSubscription", err, "Failed to create subscription in Stripe")
         c.JSON(http.StatusInternalServerError, gin.H{"error": "サブスクリプションの作成に失敗しました: " + err.Error()})
         return
     }
@@ -388,9 +416,12 @@ func CreateSubscriptionHandler(c *gin.Context) {
         UpdatedAt:            now,
     }
     if _, err := subscriptionCollection.InsertOne(ctx, newSub); err != nil {
+        utils.LogError("CreateSubscription", err, "Failed to save subscription to database")
         c.JSON(http.StatusInternalServerError, gin.H{"error": "サブスクリプション情報の保存に失敗しました: " + err.Error()})
         return
     }
+
+    utils.LogInfo("CreateSubscription", "Successfully created subscription for user: "+userID.Hex()+" with status: "+string(subRes.Status))
 
     // レスポンス: 必要ならフロントでPaymentIntentを処理可能
     resp := gin.H{
@@ -908,12 +939,25 @@ func GetSubscriptionStatusHandler(c *gin.Context) {
 	ctx := context.Background()
 	err = subscriptionCollection.FindOne(ctx, bson.M{"user_id": userID}).Decode(&sub)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "サブスクリプション情報が見つかりません"})
+		// サブスクリプションが見つからない場合は、hasActiveSubscription: false を返す
+		c.JSON(http.StatusOK, gin.H{
+			"hasActiveSubscription": false,
+			"subscription":          nil,
+		})
 		return
 	}
 
+	// サブスクリプションがアクティブまたは試用期間中かチェック
+	hasActiveSubscription := sub.Status == "active" || sub.Status == "trialing"
+
 	// サブスクリプション情報を返す
 	c.JSON(http.StatusOK, gin.H{
-		"subscription": sub,
+		"hasActiveSubscription": hasActiveSubscription,
+		"subscription": gin.H{
+			"id":                  sub.StripeSubscriptionID,
+			"status":              sub.Status,
+			"currentPeriodEnd":    sub.CurrentPeriodEnd,
+			"cancelAtPeriodEnd":   sub.CancelAtPeriodEnd,
+		},
 	})
 }

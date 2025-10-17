@@ -64,7 +64,7 @@ function App() {
                   element={<SubscriptionCancel />}
                 />
                 <Route
-                  path="/subscription/manage"
+                  path="/subscription/management"
                   element={<SubscriptionManagement />}
                 />
 

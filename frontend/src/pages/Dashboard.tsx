@@ -8,6 +8,7 @@ import {
   Announcement,
   getLatestAnnouncements,
 } from "../services/announcementService";
+import { paymentAPI } from "../services/api";
 import Loading from "./Loading";
 
 const Dashboard: React.FC = () => {
@@ -18,6 +19,10 @@ const Dashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState(
     sessionStorage.getItem("isLoading") === "true"
   );
+  const [hasActiveSubscription, setHasActiveSubscription] =
+    useState<boolean>(false);
+  const [checkingSubscription, setCheckingSubscription] =
+    useState<boolean>(true);
 
   // ユーザーが管理者かどうかをチェック
   const isAdmin = user?.role === "admin" || user?.isAdmin === true;
@@ -31,6 +36,33 @@ const Dashboard: React.FC = () => {
       return () => clearTimeout(timeout);
     }
   }, [isLoading]);
+
+  // お知らせが新着かどうかを判定（24時間以内に作成されたものを新着とする）
+  const isNewAnnouncement = (createdAt: string) => {
+    const announcementDate = new Date(createdAt);
+    const now = new Date();
+    const diffInHours =
+      (now.getTime() - announcementDate.getTime()) / (1000 * 60 * 60);
+    return diffInHours <= 24;
+  };
+
+  // サブスクリプション状態を確認
+  useEffect(() => {
+    const checkSubscriptionStatus = async () => {
+      try {
+        const response = await paymentAPI.getSubscriptionStatus();
+        setHasActiveSubscription(response.data.hasActiveSubscription || false);
+      } catch (err) {
+        console.error("サブスクリプション状態の確認に失敗しました", err);
+        // エラー時はサブスクリプションなしとして扱う
+        setHasActiveSubscription(false);
+      } finally {
+        setCheckingSubscription(false);
+      }
+    };
+
+    checkSubscriptionStatus();
+  }, []);
 
   useEffect(() => {
     const fetchAnnouncements = async () => {
@@ -114,6 +146,7 @@ const Dashboard: React.FC = () => {
                 <AnnouncementCard
                   key={announcement.id}
                   announcement={announcement}
+                  isNew={isNewAnnouncement(announcement.createdAt)}
                 />
               ))}
             </div>
@@ -166,38 +199,49 @@ const Dashboard: React.FC = () => {
               コーヒー、紅茶、ジュース、炭酸飲料など豊富なメニューをご用意しています。
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/subscription" className="btn-primary">
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                  />
-                </svg>
-                サブスクリプション登録
-              </Link>
-              <Link to="/mypage" className="btn-secondary">
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                  />
-                </svg>
-                マイページ
-              </Link>
+              {checkingSubscription ? (
+                <div className="flex items-center justify-center gap-2 text-gray-600">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-orange-600"></div>
+                  <span>確認中...</span>
+                </div>
+              ) : (
+                <>
+                  <Link to="/subscription" className="btn-primary">
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                      />
+                    </svg>
+                    {hasActiveSubscription
+                      ? "サブスク確認・管理"
+                      : "サブスクリプション登録"}
+                  </Link>
+                  <Link to="/mypage" className="btn-secondary">
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
+                    </svg>
+                    マイページ
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </Card>

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import Button from "../components/Button";
 import Card from "../components/Card";
 import ErrorAlert from "../components/ErrorAlert";
@@ -12,6 +13,17 @@ interface ApiError {
     data?: {
       error?: string;
     };
+  };
+}
+
+// サブスクリプション状態の型定義
+interface SubscriptionStatus {
+  hasActiveSubscription: boolean;
+  subscription?: {
+    id: string;
+    status: string;
+    currentPeriodEnd: string;
+    cancelAtPeriodEnd: boolean;
   };
 }
 
@@ -31,9 +43,33 @@ const subscriptionPlans = [
 const Subscription: React.FC = () => {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [checkingStatus, setCheckingStatus] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [subscriptionStatus, setSubscriptionStatus] =
+    useState<SubscriptionStatus | null>(null);
 
   const { user } = useAuth();
+
+  // サブスクリプション状態を確認
+  React.useEffect(() => {
+    const checkSubscriptionStatus = async () => {
+      try {
+        const response = await paymentAPI.getSubscriptionStatus();
+        setSubscriptionStatus(response.data);
+      } catch (err) {
+        console.error("サブスクリプション状態の確認に失敗しました", err);
+        // エラー時はサブスクリプションなしとして扱う
+        setSubscriptionStatus({
+          hasActiveSubscription: false,
+          subscription: undefined,
+        });
+      } finally {
+        setCheckingStatus(false);
+      }
+    };
+
+    checkSubscriptionStatus();
+  }, []);
 
   // 選択されたプランの情報を取得
   const getSelectedPlanInfo = () => {
@@ -93,6 +129,20 @@ const Subscription: React.FC = () => {
 
   const selectedPlanInfo = getSelectedPlanInfo();
 
+  // サブスクリプション状態を確認中
+  if (checkingStatus) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">サブスクリプション状態を確認中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const hasActiveSubscription = subscriptionStatus?.hasActiveSubscription;
+
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto animate-fade-in">
@@ -101,9 +151,41 @@ const Subscription: React.FC = () => {
             サブスクリプションプラン
           </h1>
           <p className="mt-3 max-w-2xl mx-auto text-xl text-gray-500 sm:mt-4">
-            あなたに最適なプランを選択してください
+            {hasActiveSubscription
+              ? "現在登録中のプランを確認できます"
+              : "あなたに最適なプランを選択してください"}
           </p>
         </div>
+
+        {hasActiveSubscription && (
+          <Card className="mb-8 bg-green-50 border-2 border-green-200">
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
+                <svg
+                  className="w-6 h-6 text-green-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-green-900">
+                  サブスクリプション登録済み
+                </h3>
+                <p className="text-sm text-green-700">
+                  現在、以下のプランをご利用中です
+                </p>
+              </div>
+            </div>
+          </Card>
+        )}
 
         {error && <ErrorAlert message={error} className="animate-slide-up" />}
 
@@ -115,19 +197,26 @@ const Subscription: React.FC = () => {
                   plan.id === "prod_Rq1DHH7IbFPodY"
                     ? `border-2 border-${plan.color}-500 relative`
                     : ""
-                } ${selectedPlan === plan.id ? "selected" : ""}`}
+                } ${selectedPlan === plan.id ? "selected" : ""} ${
+                  hasActiveSubscription ? "opacity-90" : ""
+                }`}
                 style={{ animationDelay: `${index * 150}ms` }}
               >
-                {plan.id === "prod_Rq1DHH7IbFPodY" && (
-                  <div
-                    className={`absolute top-0 right-0 -mt-4 -mr-4 bg-${plan.color}-500 rounded-full px-3 py-1 text-white text-xs font-semibold transform rotate-3`}
-                  >
-                    おすすめ
-                  </div>
-                )}
+                {plan.id === "prod_Rq1DHH7IbFPodY" &&
+                  !hasActiveSubscription && (
+                    <div
+                      className={`absolute top-0 right-0 -mt-4 -mr-4 bg-${plan.color}-500 rounded-full px-3 py-1 text-white text-xs font-semibold transform rotate-3`}
+                    >
+                      おすすめ
+                    </div>
+                  )}
                 <div className="p-6">
                   <h2
-                    className={`text-lg leading-6 font-medium text-${plan.color}-700`}
+                    className={`text-lg leading-6 font-medium ${
+                      hasActiveSubscription
+                        ? "text-green-700"
+                        : `text-${plan.color}-700`
+                    }`}
                   >
                     {plan.name}
                   </h2>
@@ -142,19 +231,33 @@ const Subscription: React.FC = () => {
                       /月
                     </span>
                   </p>
-                  <Button
-                    type="button"
-                    onClick={() => handlePlanSelect(plan.id)}
-                    variant={selectedPlan === plan.id ? "primary" : "outline"}
-                    fullWidth
-                    className={`mt-8 btn-hover-effect ${
-                      selectedPlan === plan.id
-                        ? "bg-gradient-to-r from-blue-500 to-indigo-600"
-                        : ""
-                    }`}
-                  >
-                    {selectedPlan === plan.id ? "選択中" : "選択する"}
-                  </Button>
+                  {hasActiveSubscription ? (
+                    <div className="mt-8 space-y-3">
+                      <div className="w-full px-4 py-3 bg-green-100 border-2 border-green-500 text-green-800 font-semibold rounded-md text-center">
+                        現在登録中のサブスク
+                      </div>
+                      <Link
+                        to="/subscription/management"
+                        className="block w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md text-center transition-colors"
+                      >
+                        サブスクリプション管理
+                      </Link>
+                    </div>
+                  ) : (
+                    <Button
+                      type="button"
+                      onClick={() => handlePlanSelect(plan.id)}
+                      variant={selectedPlan === plan.id ? "primary" : "outline"}
+                      fullWidth
+                      className={`mt-8 btn-hover-effect ${
+                        selectedPlan === plan.id
+                          ? "bg-gradient-to-r from-blue-500 to-indigo-600"
+                          : ""
+                      }`}
+                    >
+                      {selectedPlan === plan.id ? "選択中" : "選択する"}
+                    </Button>
+                  )}
                 </div>
                 <div className="pt-6 pb-8 px-6">
                   <h3 className="text-xs font-medium text-gray-900 tracking-wide uppercase">
@@ -200,21 +303,23 @@ const Subscription: React.FC = () => {
           </div>
         )}
 
-        <div className="mt-10 text-center">
-          <Button
-            onClick={handleSubscribe}
-            variant="primary"
-            size="large"
-            isLoading={loading}
-            disabled={!selectedPlan || loading}
-            className="px-8 btn-hover-effect bg-gradient-to-r from-blue-500 to-indigo-600"
-          >
-            サブスクリプションを開始する
-          </Button>
-          <p className="mt-4 text-sm text-gray-500">
-            * サブスクリプションはいつでもキャンセルできます
-          </p>
-        </div>
+        {!hasActiveSubscription && (
+          <div className="mt-10 text-center">
+            <Button
+              onClick={handleSubscribe}
+              variant="primary"
+              size="large"
+              isLoading={loading}
+              disabled={!selectedPlan || loading}
+              className="px-8 btn-hover-effect bg-gradient-to-r from-blue-500 to-indigo-600"
+            >
+              サブスクリプションを開始する
+            </Button>
+            <p className="mt-4 text-sm text-gray-500">
+              * サブスクリプションはいつでもキャンセルできます
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

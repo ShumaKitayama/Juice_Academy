@@ -105,21 +105,92 @@ const PaymentMethod: React.FC = () => {
 
   // カードブランドのロゴを取得
   const getCardBrandLogo = (brand: string) => {
-    const brandMap: { [key: string]: string } = {
-      visa: "https://cdn.jsdelivr.net/gh/creativetimofficial/public-assets@master/soft-ui-design-system/assets/img/logos/visa.png",
-      mastercard:
-        "https://cdn.jsdelivr.net/gh/creativetimofficial/public-assets@master/soft-ui-design-system/assets/img/logos/mastercard.png",
-      amex: "https://cdn.jsdelivr.net/gh/creativetimofficial/public-assets@master/soft-ui-design-system/assets/img/logos/amex.png",
-      jcb: "https://cdn.jsdelivr.net/gh/creativetimofficial/public-assets@master/soft-ui-design-system/assets/img/logos/jcb.png",
-      discover:
-        "https://cdn.jsdelivr.net/gh/creativetimofficial/public-assets@master/soft-ui-design-system/assets/img/logos/discover.png",
-      diners:
-        "https://cdn.jsdelivr.net/gh/creativetimofficial/public-assets@master/soft-ui-design-system/assets/img/logos/diners.png",
-      unionpay:
-        "https://cdn.jsdelivr.net/gh/creativetimofficial/public-assets@master/soft-ui-design-system/assets/img/logos/unionpay.png",
-    };
+    const brandLower = brand.toLowerCase();
 
-    return brandMap[brand.toLowerCase()] || "";
+    switch (brandLower) {
+      case "visa":
+        return (
+          <svg
+            className="h-6 w-10"
+            viewBox="0 0 48 32"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="48" height="32" rx="4" fill="#1434CB" />
+            <text
+              x="50%"
+              y="50%"
+              dominantBaseline="middle"
+              textAnchor="middle"
+              fill="white"
+              fontFamily="Arial"
+              fontSize="10"
+              fontWeight="bold"
+            >
+              VISA
+            </text>
+          </svg>
+        );
+      case "mastercard":
+        return (
+          <svg
+            className="h-6 w-10"
+            viewBox="0 0 48 32"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="48" height="32" rx="4" fill="#EB001B" />
+            <circle cx="18" cy="16" r="8" fill="#EB001B" />
+            <circle cx="30" cy="16" r="8" fill="#F79E1B" />
+          </svg>
+        );
+      case "amex":
+        return (
+          <svg
+            className="h-6 w-10"
+            viewBox="0 0 48 32"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="48" height="32" rx="4" fill="#006FCF" />
+            <text
+              x="50%"
+              y="50%"
+              dominantBaseline="middle"
+              textAnchor="middle"
+              fill="white"
+              fontFamily="Arial"
+              fontSize="8"
+              fontWeight="bold"
+            >
+              AMEX
+            </text>
+          </svg>
+        );
+      default:
+        return (
+          <svg
+            className="h-6 w-10"
+            viewBox="0 0 48 32"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="48" height="32" rx="4" fill="#6B7280" />
+            <text
+              x="50%"
+              y="50%"
+              dominantBaseline="middle"
+              textAnchor="middle"
+              fill="white"
+              fontFamily="Arial"
+              fontSize="7"
+              fontWeight="bold"
+            >
+              CARD
+            </text>
+          </svg>
+        );
+    }
   };
 
   if (loading && paymentMethods.length === 0) {
@@ -148,11 +219,9 @@ const PaymentMethod: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       {method.card.brand && (
-                        <img
-                          src={getCardBrandLogo(method.card.brand)}
-                          alt={method.card.brand}
-                          className="h-8 w-auto mr-3"
-                        />
+                        <div className="mr-3">
+                          {getCardBrandLogo(method.card.brand)}
+                        </div>
                       )}
                       <div>
                         <p className="text-sm font-medium text-gray-900">
