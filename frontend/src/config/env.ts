@@ -1,10 +1,27 @@
 // 環境設定の管理
+
+/**
+ * API URLを構築するヘルパー関数
+ * VITE_API_URLが既に"/api"で終わっている場合は重複を避ける
+ */
+const buildApiUrl = (): string => {
+  const baseUrl =
+    import.meta.env.VITE_API_URL ||
+    (import.meta.env.MODE === "production"
+      ? `${window.location.origin}`
+      : "http://localhost:8080");
+
+  // 既に /api で終わっている場合はそのまま返す
+  if (baseUrl.endsWith("/api")) {
+    return baseUrl;
+  }
+
+  // /api で終わっていない場合は追加
+  return `${baseUrl}/api`;
+};
+
 export const config = {
-  apiUrl:
-    (import.meta.env.VITE_API_URL ||
-      (import.meta.env.MODE === "production"
-        ? `${window.location.origin}`
-        : "http://localhost:8080")) + "/api",
+  apiUrl: buildApiUrl(),
 
   stripePublishableKey: import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "",
 

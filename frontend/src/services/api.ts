@@ -1,11 +1,8 @@
 import axios from "axios";
+import { getApiUrl } from "../config/env";
 
-// 環境に応じたAPIのベースURL
-const API_URL =
-  (import.meta.env.VITE_API_URL ||
-    (import.meta.env.MODE === "production"
-      ? `${window.location.origin}`
-      : "http://localhost:8080")) + "/api";
+// 環境に応じたAPIのベースURL（config/env.tsから取得）
+const API_URL = getApiUrl();
 
 // Axiosインスタンスの作成
 export const api = axios.create({
