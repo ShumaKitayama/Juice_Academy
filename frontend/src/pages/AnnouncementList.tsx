@@ -1,16 +1,28 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Announcement, getAllAnnouncements } from '../services/announcementService';
-import AnnouncementCard from '../components/AnnouncementCard';
-import LoadingSpinner from '../components/LoadingSpinner';
-import ErrorAlert from '../components/ErrorAlert';
-import Button from '../components/Button';
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import AnnouncementCard from "../components/AnnouncementCard";
+import Button from "../components/Button";
+import ErrorAlert from "../components/ErrorAlert";
+import LoadingSpinner from "../components/LoadingSpinner";
+import {
+  Announcement,
+  getAllAnnouncements,
+} from "../services/announcementService";
 
 const AnnouncementList: React.FC = () => {
   const navigate = useNavigate();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  // お知らせが新着かどうかを判定（24時間以内に作成されたものを新着とする）
+  const isNewAnnouncement = (createdAt: string) => {
+    const announcementDate = new Date(createdAt);
+    const now = new Date();
+    const diffInHours =
+      (now.getTime() - announcementDate.getTime()) / (1000 * 60 * 60);
+    return diffInHours <= 24;
+  };
 
   useEffect(() => {
     const fetchAnnouncements = async () => {
@@ -19,8 +31,8 @@ const AnnouncementList: React.FC = () => {
         setAnnouncements(data);
         setLoading(false);
       } catch (err) {
-        console.error('お知らせの取得に失敗しました', err);
-        setError('お知らせの取得に失敗しました');
+        console.error("お知らせの取得に失敗しました", err);
+        setError("お知らせの取得に失敗しました");
         setLoading(false);
       }
     };
@@ -29,7 +41,7 @@ const AnnouncementList: React.FC = () => {
   }, []);
 
   const handleGoBack = () => {
-    navigate('/');
+    navigate("/");
   };
 
   return (
@@ -37,11 +49,7 @@ const AnnouncementList: React.FC = () => {
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-900">お知らせ一覧</h1>
-          <Button
-            onClick={handleGoBack}
-            variant="outline"
-            size="small"
-          >
+          <Button onClick={handleGoBack} variant="outline" size="small">
             ダッシュボードへ戻る
           </Button>
         </div>
@@ -59,11 +67,11 @@ const AnnouncementList: React.FC = () => {
         ) : (
           <div className="bg-white shadow overflow-hidden sm:rounded-lg">
             <div className="divide-y divide-gray-200">
-              {announcements.map((announcement, index) => (
+              {announcements.map((announcement) => (
                 <div key={announcement.id} className="p-2">
                   <AnnouncementCard
                     announcement={announcement}
-                    isNew={index === 0} // 最新のお知らせには「新着情報」バッジを表示
+                    isNew={isNewAnnouncement(announcement.createdAt)} // 24時間以内のお知らせには「新着情報」バッジを表示
                   />
                 </div>
               ))}
@@ -75,4 +83,4 @@ const AnnouncementList: React.FC = () => {
   );
 };
 
-export default AnnouncementList; 
+export default AnnouncementList;

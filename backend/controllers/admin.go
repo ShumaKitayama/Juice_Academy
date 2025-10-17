@@ -3,18 +3,22 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
 
 // SeedAdminUser は管理者ユーザーをデータベースに作成します
-func SeedAdminUser(db *mongo.Database) {
+func SeedAdminUser() {
 	fmt.Println("管理者ユーザー作成機能を実行します")
 
-	// MongoDB を使用している場合の実装例
-	collection := db.Collection("users")
+	// InitUserCollection で初期化された userCollection を使用
+	if userCollection == nil {
+		fmt.Println("エラー: userCollection が初期化されていません")
+		return
+	}
+	collection := userCollection
 
 	// データベース内の既存の管理者ユーザーを確認
 	// is_admin と isAdmin の両方を確認（フィールド名の不一致がある可能性があるため）
@@ -30,22 +34,18 @@ func SeedAdminUser(db *mongo.Database) {
 	if adminCount == 0 {
 		// 管理者ユーザーが存在しない場合は作成
 		fmt.Println("管理者ユーザーが見つかりません。新しく作成します。")
-		adminUser := struct {
-			Username  string `bson:"username"`
-			Email     string `bson:"email"`
-			Password  string `bson:"password_hash"` // フィールド名をpassword_hashに修正
-			NameKana  string `bson:"name_kana"`
-			StudentID string `bson:"student_id"`
-			Role      string `bson:"role"`
-			IsAdmin   bool   `bson:"is_admin"` // フィールド名をis_adminに修正
-		}{
-			Username:  "admin",
-			Email:     "admin@example.com",
-			Password:  hashPassword("securePassword123"),
-			NameKana:  "管理者",
-			StudentID: "admin001",
-			Role:      "admin",
-			IsAdmin:   true,
+		
+		// User構造体と一致する形式で作成
+		now := time.Now()
+		adminUser := bson.M{
+			"email":         "admin@example.com",
+			"password_hash": hashPassword("securePassword123"),
+			"name_kana":     "管理者",
+			"student_id":    "admin001",
+			"role":          "admin",
+			"is_admin":      true,
+			"created_at":    now,
+			"updated_at":    now,
 		}
 
 		_, err := collection.InsertOne(context.Background(), adminUser)
@@ -54,6 +54,8 @@ func SeedAdminUser(db *mongo.Database) {
 			return
 		}
 		fmt.Println("管理者ユーザーが作成されました")
+		fmt.Println("  Email: admin@example.com")
+		fmt.Println("  Password: securePassword123")
 	} else {
 		// 既存の管理者ユーザーを新しいフィールド名に更新
 		fmt.Printf("既存の管理者ユーザーが見つかりました: %d 件\n", adminCount)

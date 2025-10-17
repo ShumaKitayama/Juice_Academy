@@ -61,31 +61,14 @@ FRONTEND_URL=https://yourdomain.com
 CORS_ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
 ```
 
-### 3. SSL 証明書の準備
+### 3. Cloudflare Tunnel の設定
 
-#### オプション A: Let's Encrypt（推奨）
-
-```bash
-# Certbotをインストール
-sudo apt-get update
-sudo apt-get install certbot
-
-# SSL証明書を取得
-sudo certbot certonly --standalone -d yourdomain.com -d www.yourdomain.com
-
-# 証明書をコピー
-sudo cp /etc/letsencrypt/live/yourdomain.com/fullchain.pem ssl/cert.pem
-sudo cp /etc/letsencrypt/live/yourdomain.com/privkey.pem ssl/key.pem
-sudo chown $USER:$USER ssl/*.pem
-```
-
-#### オプション B: 自己署名証明書（テスト用）
+このプロジェクトは Cloudflare Tunnel と Zero Trust を使用してデプロイします。
+SSL 証明書の管理や nginx の設定は不要です。
 
 ```bash
-mkdir -p ssl
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout ssl/key.pem -out ssl/cert.pem \
-  -subj '/C=JP/ST=Tokyo/L=Tokyo/O=JuiceAcademy/CN=localhost'
+# Cloudflare Tunnel の設定手順はプロジェクトの要件に応じて追加してください
+# 詳細は Cloudflare のドキュメントを参照: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/
 ```
 
 ### 4. デプロイの実行
@@ -197,12 +180,12 @@ docker-compose -f docker-compose.prod.yml exec mongodb mongosh
 
 ```bash
 # フロントエンドの確認
-curl -f http://localhost/
+curl -f http://localhost:3000/
 
 # バックエンドAPIの確認
 curl -f http://localhost:8080/api/announcements
 
-# HTTPSの確認（SSL証明書設定後）
+# Cloudflare Tunnel経由での確認
 curl -f https://yourdomain.com/
 ```
 
@@ -303,8 +286,7 @@ go test -v ./controllers -run TestAuthIntegrationSuite
 docker-compose -f docker-compose.prod.yml logs
 
 # ポートの競合を確認
-sudo netstat -tlnp | grep :80
-sudo netstat -tlnp | grep :443
+sudo netstat -tlnp | grep :3000
 sudo netstat -tlnp | grep :8080
 ```
 
@@ -322,24 +304,17 @@ docker network ls
 docker network inspect juice_academy_juice_academy_network
 ```
 
-#### 3. SSL 証明書の問題
+#### 3. フロントエンドが表示されない
 
 ```bash
-# 証明書の有効性を確認
-openssl x509 -in ssl/cert.pem -text -noout
+# フロントエンドコンテナの状態を確認
+docker-compose -f docker-compose.prod.yml ps frontend
 
-# 証明書の期限を確認
-openssl x509 -in ssl/cert.pem -noout -dates
-```
+# フロントエンドのログを確認
+docker-compose -f docker-compose.prod.yml logs frontend
 
-#### 4. フロントエンドが表示されない
-
-```bash
-# Nginxの設定を確認
-docker-compose -f docker-compose.prod.yml exec nginx nginx -t
-
-# Nginxのログを確認
-docker-compose -f docker-compose.prod.yml logs nginx
+# Cloudflare Tunnelの接続状態を確認
+# cloudflared tunnel info <tunnel-name>
 ```
 
 ### 緊急時の対応
@@ -374,9 +349,9 @@ docker-compose up -d
 ### 本番環境でのセキュリティ設定
 
 1. **強力なパスワード**: すべてのパスワードは 32 文字以上の複雑なものを使用
-2. **HTTPS 強制**: 本番環境では必ず HTTPS を使用
+2. **Cloudflare Zero Trust**: Cloudflare の Zero Trust でアクセス制御を設定
 3. **CORS 制限**: 特定のドメインのみ許可
-4. **ファイアウォール**: 必要なポート（80, 443, 8080）のみ開放
+4. **ファイアウォール**: Cloudflare Tunnel を使用することで、サーバーのポートを外部に公開する必要がありません
 5. **定期更新**: Docker イメージとシステムの定期更新
 
 ### 定期メンテナンス
@@ -396,10 +371,10 @@ find mongodb-backup/ -type d -mtime +30 -exec rm -rf {} \;
 
 ### 推奨設定
 
-1. **リバースプロキシ**: Nginx を使用してロードバランシング
-2. **キャッシュ**: 静的ファイルのキャッシュ設定
-3. **圧縮**: Gzip 圧縮の有効化
-4. **データベース**: 適切なインデックスの設定
+1. **Cloudflare**: Cloudflare のキャッシュと CDN を活用
+2. **圧縮**: Cloudflare の自動圧縮機能を有効化
+3. **データベース**: 適切なインデックスの設定
+4. **Zero Trust**: Cloudflare Zero Trust でセキュリティを強化
 
 ### モニタリング
 

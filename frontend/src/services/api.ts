@@ -1,10 +1,8 @@
 import axios from "axios";
+import { getApiUrl } from "../config/env";
 
-// 環境に応じたAPIのベースURL
-const API_URL = import.meta.env.VITE_API_URL || 
-  (import.meta.env.MODE === 'production' 
-    ? `${window.location.origin}/api` 
-    : "http://localhost:8080/api");
+// 環境に応じたAPIのベースURL（config/env.tsから取得）
+const API_URL = getApiUrl();
 
 // Axiosインスタンスの作成
 export const api = axios.create({
@@ -20,20 +18,14 @@ api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
     if (token) {
-      // 本番環境ではコンソールログを無効化
-      if (import.meta.env.MODE !== 'production') {
-        console.log("送信するトークン (抜粋):", token.substring(0, 20) + "...");
-      }
-
-      // Authorization ヘッダーを正しく設定
+      // Authorization ヘッダーを設定（ログに中身は出さない）
       config.headers.Authorization = `Bearer ${token}`;
 
-      // 本番環境ではデバッグログを無効化
-      if (import.meta.env.MODE !== 'production') {
-        console.log("リクエストヘッダー:", config.headers);
+      if (import.meta.env.MODE !== "production") {
+        console.log("認証トークンを付与してリクエストを送信します");
         console.log("リクエストURL:", config.url);
       }
-    } else if (import.meta.env.MODE !== 'production') {
+    } else if (import.meta.env.MODE !== "production") {
       console.warn("トークンがありません - 認証なしでリクエストを送信します");
     }
     return config;
@@ -50,7 +42,7 @@ api.interceptors.response.use(
   },
   (error) => {
     // 本番環境では詳細なエラーログを制限
-    if (import.meta.env.MODE !== 'production') {
+    if (import.meta.env.MODE !== "production") {
       console.error("APIエラー発生:", {
         status: error.response?.status,
         url: error.config?.url,
@@ -69,7 +61,7 @@ api.interceptors.response.use(
         isAdminRequest &&
         (error.response.status === 401 || error.response.status === 403)
       ) {
-        if (import.meta.env.MODE !== 'production') {
+        if (import.meta.env.MODE !== "production") {
           console.error("管理者権限に関するエラー:", error.response.data);
         }
         return Promise.reject(error);
@@ -77,7 +69,7 @@ api.interceptors.response.use(
 
       // それ以外の認証エラー(401)の場合、ログアウト処理
       if (error.response.status === 401) {
-        if (import.meta.env.MODE !== 'production') {
+        if (import.meta.env.MODE !== "production") {
           console.log("認証エラーのためログアウトします");
         }
         localStorage.removeItem("token");
@@ -106,8 +98,9 @@ export const authAPI = {
   // ログイン
   login: async (credentials: { email: string; password: string }) => {
     const response = await api.post("/login", credentials);
-
-    console.log("ログインレスポンス:", response.data);
+    if (import.meta.env.MODE !== "production") {
+      console.log("ログイン成功。ユーザー情報を保存します（トークン非表示）");
+    }
 
     // レスポンスデータを確認してユーザー情報を処理
     const userData = { ...response.data.user };
@@ -136,7 +129,9 @@ export const authAPI = {
     sessionStorage.removeItem("isLoading");
     sessionStorage.setItem("isLoading", "true");
 
-    console.log("ローカルストレージに保存されたユーザー情報:", userData);
+    if (import.meta.env.MODE !== "production") {
+      console.log("ローカルストレージにユーザー情報を保存しました");
+    }
     return { ...response, data: { ...response.data, user: userData } };
   },
 
@@ -178,9 +173,9 @@ export const paymentAPI = {
     return api.post("/payment/confirm-setup", { userId, paymentMethodId });
   },
 
-  // サブスクリプションを作成
-  createSubscription: async (userId: string, priceId: string) => {
-    return api.post("/payment/subscription", { userId, priceId });
+  // サブスクリプションを作成（ユーザーIDはサーバー側のJWTから取得）
+  createSubscription: async (priceId: string) => {
+    return api.post("/payment/subscription", { priceId });
   },
 
   // 決済履歴を取得

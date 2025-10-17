@@ -2,27 +2,26 @@ package controllers
 
 import (
 	"context"
-	"fmt"
+	"juice_academy_backend/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/stripe/stripe-go/v72"
+	"github.com/stripe/stripe-go/v72/customer"
+	subscriptionapi "github.com/stripe/stripe-go/v72/sub"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// DeleteAccountHandler はユーザーのアカウント削除処理を行うハンドラ
+// DeleteAccountHandler はユーザーのアカウント削除処理を行うハンドラ（Stripe連携対応）
+// 詳細は backend/ACCOUNT_DELETION.md を参照
 func DeleteAccountHandler(c *gin.Context) {
-	// デバッグ用にコンテキストの内容を出力
-	fmt.Printf("Context keys: %v\n", c.Keys)
-
-	// コンテキストからユーザーIDを取得
-	userIDStr, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "認証情報が見つかりません"})
-		return
-	}
-
-	fmt.Printf("User ID from context: %v\n", userIDStr)
+    // コンテキストからユーザーIDを取得
+    userIDStr, exists := c.Get("user_id")
+    if !exists {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "認証情報が見つかりません"})
+        return
+    }
 
 	// 文字列をObjectIDに変換
 	userID, err := primitive.ObjectIDFromHex(userIDStr.(string))
@@ -31,10 +30,62 @@ func DeleteAccountHandler(c *gin.Context) {
 		return
 	}
 
-	// ユーザーの削除
 	ctx := context.Background()
+
+	// === STEP 1: Stripe 側のクリーンアップ ===
+	// 詳細: backend/ACCOUNT_DELETION.md 参照
+	
+	// 1.1 アクティブなサブスクリプションの停止
+	var subscription Subscription
+	err = subscriptionCollection.FindOne(ctx, bson.M{"user_id": userID}).Decode(&subscription)
+	if err == nil && subscription.StripeSubscriptionID != "" && subscription.Status == "active" {
+		// 即時キャンセル
+		params := &stripe.SubscriptionCancelParams{}
+		_, err := subscriptionapi.Cancel(subscription.StripeSubscriptionID, params)
+		if err != nil {
+			utils.LogError("DeleteAccount", err, "Failed to cancel Stripe subscription")
+			// サブスクリプション停止失敗は致命的エラー（課金継続を防ぐ）
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "サブスクリプションの停止に失敗しました。カスタマーサポートにお問い合わせください",
+			})
+			return
+		}
+		utils.LogInfo("DeleteAccount", "Stripe subscription cancelled for user: "+userID.Hex())
+	}
+
+	// 1.2 Stripe 顧客の削除（オプション）
+	var payment Payment
+	err = paymentCollection.FindOne(ctx, bson.M{"user_id": userID}).Decode(&payment)
+	if err == nil && payment.StripeCustomerID != "" {
+		_, err := customer.Del(payment.StripeCustomerID, nil)
+		if err != nil {
+			// 顧客削除失敗は警告のみ（継続可能）
+			utils.LogWarning("DeleteAccount", "Failed to delete Stripe customer (continuing): "+err.Error())
+		} else {
+			utils.LogInfo("DeleteAccount", "Stripe customer deleted for user: "+userID.Hex())
+		}
+	}
+
+	// === STEP 2: MongoDB のクリーンアップ ===
+	
+	// 2.1 サブスクリプション情報の削除
+	_, err = subscriptionCollection.DeleteMany(ctx, bson.M{"user_id": userID})
+	if err != nil {
+		utils.LogError("DeleteAccount", err, "Failed to delete subscriptions")
+		// 警告のみで継続
+	}
+
+	// 2.2 決済情報の削除
+	_, err = paymentCollection.DeleteMany(ctx, bson.M{"user_id": userID})
+	if err != nil {
+		utils.LogError("DeleteAccount", err, "Failed to delete payments")
+		// 警告のみで継続
+	}
+
+	// 2.3 ユーザー本体の削除（最後）
 	result, err := userCollection.DeleteOne(ctx, bson.M{"_id": userID})
 	if err != nil {
+		utils.LogError("DeleteAccount", err, "Failed to delete user")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "アカウントの削除に失敗しました"})
 		return
 	}
@@ -44,6 +95,7 @@ func DeleteAccountHandler(c *gin.Context) {
 		return
 	}
 
+	utils.LogInfo("DeleteAccount", "Account deleted successfully: "+userID.Hex())
 	c.JSON(http.StatusOK, gin.H{"message": "アカウントを削除しました"})
 }
 

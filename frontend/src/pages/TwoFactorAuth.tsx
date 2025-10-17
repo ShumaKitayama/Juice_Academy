@@ -72,7 +72,7 @@ const TwoFactorAuth: React.FC = () => {
     setSuccess(null);
 
     try {
-      const response = await fetch(`${getApiUrl()}/api/otp/verify`, {
+      const response = await fetch(`${getApiUrl()}/otp/verify`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -130,7 +130,7 @@ const TwoFactorAuth: React.FC = () => {
     setSuccess(null);
 
     try {
-      const response = await fetch(`${getApiUrl()}/api/otp/resend`, {
+      const response = await fetch(`${getApiUrl()}/otp/resend`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

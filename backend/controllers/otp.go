@@ -1,22 +1,22 @@
 package controllers
 
 import (
-	"context"
-	"crypto/rand"
-	"crypto/sha256"
-	"fmt"
-	"juice_academy_backend/services"
+    "context"
+    "crypto/rand"
+    "crypto/sha256"
+    "fmt"
+    "juice_academy_backend/services"
 	"math/big"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
+    jwt "github.com/golang-jwt/jwt/v5"
+    "github.com/gin-gonic/gin"
+    "github.com/google/uuid"
+    "go.mongodb.org/mongo-driver/bson"
+    "go.mongodb.org/mongo-driver/bson/primitive"
+    "go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -231,9 +231,11 @@ func VerifyOTPHandler(c *gin.Context) {
 
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			// 詳細なログ出力（デバッグ用）
-			fmt.Printf("OTP検証失敗: userID=%s, email=%s, code=%s, purpose=%s\n", 
-				user.ID.Hex(), user.Email, req.Code, req.Purpose)
+            // デバッグログ（本番で詳細は出さない、OTPコードはログに残さない）
+            if os.Getenv("APP_ENV") != "production" {
+                fmt.Printf("OTP検証失敗: userID=%s, email=%s, purpose=%s\n", 
+                    user.ID.Hex(), user.Email, req.Purpose)
+            }
 			
 			// 失敗試行回数を増加（最大5回まで）
 			_, updateErr := otpCollection.UpdateMany(ctx, bson.M{
