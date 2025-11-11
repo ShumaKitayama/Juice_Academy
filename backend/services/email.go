@@ -6,72 +6,49 @@ import (
 	"html/template"
 	"net/smtp"
 	"os"
-	"strconv"
+
+	"juice_academy_backend/utils"
 )
 
 // EmailConfig はメール設定の構造体
 type EmailConfig struct {
-	SMTPHost     string
-	SMTPPort     int
-	SMTPUsername string
-	SMTPPassword string
-	FromEmail    string
-	FromName     string
+	Host      string
+	Port      string
+	Username  string
+	Password  string
+	FromEmail string
+	FromName  string
 }
 
 // getEmailConfig は環境変数からメール設定を取得
 func getEmailConfig() EmailConfig {
-	port, _ := strconv.Atoi(os.Getenv("SMTP_PORT"))
-	if port == 0 {
-		port = 587 // デフォルトポート
-	}
-
 	return EmailConfig{
-		SMTPHost:     os.Getenv("SMTP_HOST"),
-		SMTPPort:     port,
-		SMTPUsername: os.Getenv("SMTP_USERNAME"),
-		SMTPPassword: os.Getenv("SMTP_PASSWORD"),
-		FromEmail:    os.Getenv("FROM_EMAIL"),
-		FromName:     os.Getenv("FROM_NAME"),
+		Host:      os.Getenv("SMTP_HOST"),
+		Port:      os.Getenv("SMTP_PORT"),
+		Username:  os.Getenv("SMTP_USERNAME"),
+		Password:  os.Getenv("SMTP_PASSWORD"),
+		FromEmail: os.Getenv("FROM_EMAIL"),
+		FromName:  os.Getenv("FROM_NAME"),
 	}
 }
 
 // OTPEmailData はOTPメールテンプレート用のデータ構造体
 type OTPEmailData struct {
-	UserName string
-	OTPCode  string
-	Purpose  string
+	UserName      string
+	OTPCode       string
+	Purpose       string
 	ExpiryMinutes int
 	CompanyName   string
 }
 
-// sendEmail は汎用メール送信関数
+// sendEmail はSMTP経由でメール送信
 func sendEmail(to, subject, body string) error {
 	config := getEmailConfig()
 
-	// 開発環境ではメール送信をモック（コンソールに出力）
-	if os.Getenv("APP_ENV") == "development" && (config.SMTPHost == "" || config.SMTPUsername == "test@example.com") {
-		fmt.Printf("\n=== 📧 メール送信モック ===\n")
-		fmt.Printf("宛先: %s\n", to)
-		fmt.Printf("件名: %s\n", subject)
-		fmt.Printf("送信者: %s\n", config.FromEmail)
-		
-		// OTPコードを抽出して表示（開発用）
-		if subject == "【Juice Academy】ログイン認証コード" {
-			// 簡単なOTPコード抽出（本文からOTPコードを探す）
-			fmt.Printf("🔐 開発用OTPコード表示機能を有効にしました\n")
-		}
-		fmt.Printf("========================\n\n")
-		return nil
-	}
-
 	// 設定の検証
-	if config.SMTPHost == "" || config.SMTPUsername == "" || config.SMTPPassword == "" {
-		return fmt.Errorf("メール設定が不完全です")
+	if config.Host == "" || config.Port == "" || config.Username == "" || config.Password == "" || config.FromEmail == "" {
+		return fmt.Errorf("SMTP設定が不完全です")
 	}
-
-	// 認証設定
-	auth := smtp.PlainAuth("", config.SMTPUsername, config.SMTPPassword, config.SMTPHost)
 
 	// メールヘッダー
 	from := config.FromEmail
@@ -79,24 +56,24 @@ func sendEmail(to, subject, body string) error {
 		from = fmt.Sprintf("%s <%s>", config.FromName, config.FromEmail)
 	}
 
-	msg := []byte(fmt.Sprintf(
+	// メールメッセージの作成（RFC 2822形式）
+	message := fmt.Sprintf(
 		"From: %s\r\n"+
 			"To: %s\r\n"+
 			"Subject: %s\r\n"+
 			"MIME-Version: 1.0\r\n"+
 			"Content-Type: text/html; charset=UTF-8\r\n"+
 			"\r\n"+
-			"%s\r\n",
-		from, to, subject, body))
+			"%s",
+		from, to, subject, body)
 
-	// メール送信
-	addr := fmt.Sprintf("%s:%d", config.SMTPHost, config.SMTPPort)
-	err := smtp.SendMail(addr, auth, config.FromEmail, []string{to}, msg)
-	if err != nil {
-		return fmt.Errorf("メール送信エラー: %v", err)
+	auth := smtp.PlainAuth("", config.Username, config.Password, config.Host)
+	addr := fmt.Sprintf("%s:%s", config.Host, config.Port)
+	if err := smtp.SendMail(addr, auth, config.FromEmail, []string{to}, []byte(message)); err != nil {
+		utils.LogError("SendOTPEmail", err, fmt.Sprintf("smtp_host=%s", config.Host))
+		return fmt.Errorf("SMTP送信エラー: %v", err)
 	}
 
-	fmt.Printf("メール送信成功: %s\n", to)
 	return nil
 }
 
@@ -270,16 +247,6 @@ func getOTPEmailTemplate() string {
 
 // SendOTPEmail はOTPをメールで送信する
 func SendOTPEmail(to, userName, otpCode, purpose string) error {
-	// 開発環境でのデバッグ情報
-	if os.Getenv("APP_ENV") == "development" {
-		fmt.Printf("\n🔐 [DEBUG] OTP送信情報:\n")
-		fmt.Printf("  宛先: %s\n", to)
-		fmt.Printf("  ユーザー名: %s\n", userName)
-		fmt.Printf("  OTPコード: %s\n", otpCode)
-		fmt.Printf("  目的: %s\n", purpose)
-		fmt.Printf("  有効期限: 5分\n\n")
-	}
-
 	// テンプレートデータを準備
 	data := OTPEmailData{
 		UserName:      userName,

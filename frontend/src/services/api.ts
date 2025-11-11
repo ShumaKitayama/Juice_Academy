@@ -1,81 +1,161 @@
-import axios from "axios";
+import axios, { AxiosError, AxiosRequestConfig } from "axios";
 import { getApiUrl } from "../config/env";
 
-// 環境に応じたAPIのベースURL（config/env.tsから取得）
 const API_URL = getApiUrl();
+const ACCESS_TOKEN_KEY = "accessToken";
+const CSRF_TOKEN_KEY = "csrfToken";
 
-// Axiosインスタンスの作成
+const getAccessToken = () => localStorage.getItem(ACCESS_TOKEN_KEY);
+const getCsrfToken = () => localStorage.getItem(CSRF_TOKEN_KEY);
+
+const saveSession = (accessToken: string, csrfToken: string) => {
+  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+  localStorage.setItem(CSRF_TOKEN_KEY, csrfToken);
+};
+
+export const clearSession = () => {
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(CSRF_TOKEN_KEY);
+  localStorage.removeItem("user");
+};
+
+const refreshClient = axios.create({
+  baseURL: API_URL,
+  headers: { "Content-Type": "application/json" },
+  withCredentials: true,
+  timeout: 10000,
+});
+
 export const api = axios.create({
   baseURL: API_URL,
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 10000, // 10秒タイムアウト
+  timeout: 10000,
+  withCredentials: true,
 });
 
-// リクエストインターセプター
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      // Authorization ヘッダーを設定（ログに中身は出さない）
-      config.headers.Authorization = `Bearer ${token}`;
+    const token = getAccessToken();
+    const csrfToken = getCsrfToken();
 
-      if (import.meta.env.MODE !== "production") {
-        console.log("認証トークンを付与してリクエストを送信します");
-        console.log("リクエストURL:", config.url);
-      }
-    } else if (import.meta.env.MODE !== "production") {
-      console.warn("トークンがありません - 認証なしでリクエストを送信します");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
+    if (csrfToken) {
+      config.headers["X-CSRF-Token"] = csrfToken;
+    }
+
+    if (import.meta.env.MODE !== "production") {
+      console.log("Sending request:", {
+        url: config.url,
+        hasToken: !!token,
+        hasCsrf: !!csrfToken,
+      });
+    }
+
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// レスポンスインターセプター
+let refreshPromise: Promise<{ accessToken: string; csrfToken: string }> | null =
+  null;
+
+const performTokenRefresh = async () => {
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      const csrfToken = getCsrfToken();
+      if (!csrfToken) {
+        throw new Error("CSRF token is missing");
+      }
+
+      const response = await refreshClient.post(
+        "/auth/refresh",
+        {},
+        {
+          headers: {
+            "X-CSRF-Token": csrfToken,
+          },
+        }
+      );
+
+      const { accessToken, csrfToken: newCsrfToken, user } = response.data;
+      if (!accessToken || !newCsrfToken) {
+        throw new Error("Invalid refresh response");
+      }
+
+      saveSession(accessToken, newCsrfToken);
+      if (user) {
+        localStorage.setItem("user", JSON.stringify(user));
+      }
+
+      return { accessToken, csrfToken: newCsrfToken };
+    })().finally(() => {
+      refreshPromise = null;
+    });
+  }
+
+  return refreshPromise;
+};
+
 api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  (error) => {
-    // 本番環境では詳細なエラーログを制限
+  (response) => response,
+  async (error: AxiosError) => {
     if (import.meta.env.MODE !== "production") {
-      console.error("APIエラー発生:", {
+      console.error("API error:", {
         status: error.response?.status,
         url: error.config?.url,
         data: error.response?.data,
       });
     }
 
-    // 管理者APIへのリクエストかどうかをチェック
+    const originalRequest = error.config as AxiosRequestConfig & {
+      _retry?: boolean;
+    };
+
     const isAdminRequest =
-      error.config?.url && error.config.url.includes("/admin/");
+      originalRequest?.url && originalRequest.url.includes("/admin/");
 
-    if (error.response) {
-      // 管理者APIへのリクエストで認証エラー(401)または権限エラー(403)の場合は、
-      // ログアウトせずにエラーを返す
-      if (
-        isAdminRequest &&
-        (error.response.status === 401 || error.response.status === 403)
-      ) {
-        if (import.meta.env.MODE !== "production") {
-          console.error("管理者権限に関するエラー:", error.response.data);
+    if (
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes("/auth/refresh")
+    ) {
+      originalRequest._retry = true;
+      try {
+        const { accessToken, csrfToken } = await performTokenRefresh();
+        if (originalRequest.headers) {
+          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+          originalRequest.headers["X-CSRF-Token"] = csrfToken;
         }
-        return Promise.reject(error);
-      }
-
-      // それ以外の認証エラー(401)の場合、ログアウト処理
-      if (error.response.status === 401) {
+        return api(originalRequest);
+      } catch (refreshError) {
+        clearSession();
         if (import.meta.env.MODE !== "production") {
-          console.log("認証エラーのためログアウトします");
+          console.warn("Failed to refresh session", refreshError);
         }
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
         window.location.href = "/login";
+        return Promise.reject(refreshError);
       }
+    }
+
+    if (
+      error.response &&
+      isAdminRequest &&
+      (error.response.status === 401 || error.response.status === 403)
+    ) {
+      if (import.meta.env.MODE !== "production") {
+        console.error("管理者権限の確認で失敗:", error.response.data);
+      }
+      return Promise.reject(error);
+    }
+
+    if (error.response?.status === 401) {
+      clearSession();
+      window.location.href = "/login";
     }
 
     return Promise.reject(error);
@@ -97,48 +177,27 @@ export const authAPI = {
 
   // ログイン
   login: async (credentials: { email: string; password: string }) => {
-    const response = await api.post("/login", credentials);
-    if (import.meta.env.MODE !== "production") {
-      console.log("ログイン成功。ユーザー情報を保存します（トークン非表示）");
-    }
-
-    // レスポンスデータを確認してユーザー情報を処理
-    const userData = { ...response.data.user };
-
-    // 管理者フラグをチェック (isAdminフィールドまたはroleフィールド）
-    if (response.data.user) {
-      // バックエンドのレスポンスからisAdminを取得または推測
-      // 1. isAdminがあればそのまま使う
-      // 2. roleが'admin'ならisAdminをtrueに設定
-      if (response.data.user.isAdmin === true) {
-        userData.isAdmin = true;
-        console.log("管理者権限を持つユーザーとして認識:", userData);
-      } else if (response.data.user.role === "admin") {
-        userData.isAdmin = true;
-        console.log("管理者ロールを持つユーザーとして認識:", userData);
-      } else {
-        userData.isAdmin = false;
-      }
-    }
-
-    // トークンとユーザー情報をローカルストレージに保存
-    localStorage.setItem("token", response.data.token);
-    localStorage.setItem("user", JSON.stringify(userData));
-
-    // ローディング画面を表示するためにsessionStorageを使用
-    sessionStorage.removeItem("isLoading");
-    sessionStorage.setItem("isLoading", "true");
-
-    if (import.meta.env.MODE !== "production") {
-      console.log("ローカルストレージにユーザー情報を保存しました");
-    }
-    return { ...response, data: { ...response.data, user: userData } };
+    return api.post("/login", credentials);
   },
 
   // ログアウト
-  logout: () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+  logout: async () => {
+    try {
+      const csrfToken = getCsrfToken();
+      await api.post(
+        "/logout",
+        {},
+        {
+          headers: csrfToken ? { "X-CSRF-Token": csrfToken } : undefined,
+        }
+      );
+    } catch (error) {
+      if (import.meta.env.MODE !== "production") {
+        console.warn("サーバー側のログアウト処理に失敗しました", error);
+      }
+    } finally {
+      clearSession();
+    }
   },
 
   // 現在のユーザー情報を取得
@@ -152,8 +211,13 @@ export const authAPI = {
 
   // ログイン状態をチェック
   isAuthenticated: () => {
-    return localStorage.getItem("token") !== null;
+    return getAccessToken() !== null;
   },
+
+  // アクセストークン/CSRFトークンの保存
+  saveSession,
+  getAccessToken,
+  getCsrfToken,
 };
 
 // 決済関連のAPI

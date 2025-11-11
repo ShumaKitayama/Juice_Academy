@@ -42,6 +42,11 @@ db.subscriptions.createIndex(
 db.subscriptions.createIndex({ status: 1 });
 db.subscriptions.createIndex({ created_at: -1 });
 
+// リフレッシュトークンコレクション
+db.refresh_tokens.createIndex({ token_hash: 1 }, { unique: true });
+db.refresh_tokens.createIndex({ expires_at: 1 }, { expireAfterSeconds: 0 });
+db.refresh_tokens.createIndex({ user_id: 1 });
+
 // Webhook冪等性管理コレクション
 db.stripe_events.createIndex({ event_id: 1 }, { unique: true });
 db.stripe_events.createIndex({ received_at: -1 });

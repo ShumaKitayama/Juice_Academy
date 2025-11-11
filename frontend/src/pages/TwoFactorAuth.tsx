@@ -7,6 +7,7 @@ import OTPInput from "../components/OTPInput";
 import SuccessAlert from "../components/SuccessAlert";
 import { getApiUrl } from "../config/env";
 import { useAuth } from "../hooks/useAuth";
+import { authAPI } from "../services/api";
 
 interface ApiError {
   response?: {
@@ -77,6 +78,7 @@ const TwoFactorAuth: React.FC = () => {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({
           email,
           code: otp,
@@ -91,17 +93,11 @@ const TwoFactorAuth: React.FC = () => {
       }
 
       // 認証成功時の処理
-      if (data.token && data.user) {
-        // トークンとユーザー情報を保存
-        localStorage.setItem("token", data.token);
+      if (data.accessToken && data.csrfToken && data.user) {
+        authAPI.saveSession(data.accessToken, data.csrfToken);
         localStorage.setItem("user", JSON.stringify(data.user));
-
-        // AuthContextに認証状態の変更を通知
         window.dispatchEvent(new Event("auth-changed"));
-
         setSuccess("認証が完了しました。ダッシュボードに移動します...");
-
-        // 即座にダッシュボードに遷移
         navigate("/", { replace: true });
       } else {
         throw new Error("認証レスポンスが不正です");
@@ -135,6 +131,7 @@ const TwoFactorAuth: React.FC = () => {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({
           email,
           purpose: "login",

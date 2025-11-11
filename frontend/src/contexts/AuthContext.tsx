@@ -40,7 +40,7 @@ interface AuthContextType {
     email: string;
     password: string;
   }) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 // 認証コンテキストの作成
@@ -60,7 +60,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     const checkAuth = () => {
       try {
         const currentUser = authAPI.getCurrentUser();
-        if (currentUser) {
+        const accessToken = authAPI.getAccessToken();
+        if (currentUser && accessToken) {
           setUser(currentUser);
           setIsAuthenticated(true);
         } else {
@@ -80,7 +81,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
     // storageイベントリスナーを追加（他のタブでの認証状態変更を検知）
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "token" || e.key === "user") {
+      if (
+        e.key === "accessToken" ||
+        e.key === "csrfToken" ||
+        e.key === "user"
+      ) {
         checkAuth();
       }
     };
@@ -139,8 +144,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   // ログアウト処理
-  const logout = () => {
-    authAPI.logout();
+  const logout = async () => {
+    await authAPI.logout();
     setUser(null);
     setIsAuthenticated(false);
     // 認証状態の変更を通知

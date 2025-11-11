@@ -10,9 +10,6 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
-  const [use2FA, setUse2FA] = useState(false);
-
   const navigate = useNavigate();
   const location = useLocation();
   const auth = useAuth();
@@ -48,71 +45,43 @@ const Login: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      if (use2FA) {
-        // 2段階認証付きログイン
-        const loginResponse = await fetch(`${getApiUrl()}/login-2fa`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email, password }),
-        });
+      const loginResponse = await fetch(`${getApiUrl()}/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ email, password }),
+      });
 
-        const loginData = await loginResponse.json();
+      const loginData = await loginResponse.json();
 
-        if (!loginResponse.ok) {
-          throw new Error(loginData.error || "ログインに失敗しました");
-        }
-
-        // パスワード認証が成功した場合、OTPを送信
-        const otpResponse = await fetch(`${getApiUrl()}/otp/send`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email,
-            purpose: "login",
-          }),
-        });
-
-        const otpData = await otpResponse.json();
-
-        if (!otpResponse.ok) {
-          throw new Error(otpData.error || "認証コードの送信に失敗しました");
-        }
-
-        // 2FA画面に遷移
-        navigate("/two-factor-auth", {
-          state: { email },
-        });
-      } else {
-        // 従来のログイン処理（2FAなし）
-        const loginResponse = await fetch(`${getApiUrl()}/login`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email, password }),
-        });
-
-        const loginData = await loginResponse.json();
-
-        if (!loginResponse.ok) {
-          throw new Error(loginData.error || "ログインに失敗しました");
-        }
-
-        // 従来のログイン成功処理
-        if (loginData.token && loginData.user) {
-          localStorage.setItem("token", loginData.token);
-          localStorage.setItem("user", JSON.stringify(loginData.user));
-
-          setIsSubmitting(false);
-          setShowSuccessAnimation(true);
-        } else {
-          throw new Error("ログインレスポンスが不正です");
-        }
+      if (!loginResponse.ok) {
+        throw new Error(loginData.error || "ログインに失敗しました");
       }
+
+      // パスワード認証成功後にOTPを送信
+      const otpResponse = await fetch(`${getApiUrl()}/otp/send`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          email,
+          purpose: "login",
+        }),
+      });
+
+      const otpData = await otpResponse.json();
+      if (!otpResponse.ok) {
+        throw new Error(otpData.error || "認証コードの送信に失敗しました");
+      }
+
+      setIsSubmitting(false);
+      navigate("/two-factor-auth", {
+        state: { email },
+      });
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message || "ログインに失敗しました。");
@@ -123,17 +92,7 @@ const Login: React.FC = () => {
     }
   };
 
-  const handleAnimationComplete = () => {
-    console.log("アニメーション完了、ホームページに遷移します");
-    // 確実に認証状態を反映させるため、ページ全体をリロード
-    window.location.href = "/";
-  };
-
   // ログイン成功アニメーションを表示
-  if (showSuccessAnimation) {
-    return <JuiceLoadingAnimation onComplete={handleAnimationComplete} />;
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
@@ -215,26 +174,6 @@ const Login: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
-            </div>
-
-            <div className="flex items-center">
-              <input
-                id="use-2fa"
-                name="use-2fa"
-                type="checkbox"
-                className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
-                checked={use2FA}
-                onChange={(e) => setUse2FA(e.target.checked)}
-              />
-              <label
-                htmlFor="use-2fa"
-                className="ml-2 block text-sm text-gray-900"
-              >
-                二段階認証を使用する
-                <span className="text-gray-500 text-xs block">
-                  （メールでワンタイムパスコードを受信）
-                </span>
-              </label>
             </div>
 
             <div>

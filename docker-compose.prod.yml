@@ -27,6 +27,13 @@ services:
       - juice_academy_network
     volumes:
       - ./logs:/app/logs
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
   frontend:
     build:

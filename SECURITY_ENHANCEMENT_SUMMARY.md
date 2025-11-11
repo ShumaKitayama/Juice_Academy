@@ -120,6 +120,116 @@ mongodb://juice_academy_app:password@mongodb:27017/juice_academy?authSource=juic
 
 ---
 
+### 7. ✅ JWT/リフレッシュトークン運用の再設計
+
+**ファイル**:
+
+- `backend/controllers/auth_tokens.go`
+- `backend/controllers/otp.go`
+- `backend/controllers/auth.go`
+
+**実装内容**:
+
+- アクセストークンは 15 分有効の JWT に短縮
+- リフレッシュトークンは 64 byte ランダム値を SHA-256 ハッシュで `refresh_tokens` コレクションに保存（TTL/重複防止インデックス付き）
+- リフレッシュトークンは `HttpOnly + Secure + SameSite=Strict` Cookie として配布
+- `/api/auth/refresh` 実装により Cookie + CSRF 二重送信で再発行
+- ログアウト時にリフレッシュトークンとアクセストークン双方を失効
+
+**効果**:
+
+- XSS からのセッション窃取を最小化
+- 漏洩時もハッシュ保管によりリフレッシュトークンの再利用を阻害
+- 再計算性を担保したセッション再発行フローが確立
+
+---
+
+### 8. ✅ CSRF 防御と CORS 厳格化
+
+**ファイル**:
+
+- `backend/controllers/csrf.go`
+- `backend/main.go`
+- `frontend/src/services/api.ts`
+
+**実装内容**:
+
+- `refresh_tokens` に CSRF トークンハッシュを保存し、`X-CSRF-Token` 二重送信方式で検証
+- すべての状態変更系エンドポイントを `CSRFProtection` ミドルウェアで保護
+- CORS は許可ドメインのホワイトリストのみ許可し、Cookie を伴う `withCredentials` 通信を前提に `Access-Control-Allow-Credentials: true`
+- フロントエンドは `axios` リクエストで `withCredentials` と CSRF ヘッダーを自動送信
+
+**効果**:
+
+- セッション継続に Cookie を利用しつつ CSRF を遮断
+- 誤設定によるワイルドカード CORS を排除
+
+---
+
+### 9. ✅ レート制限と Redis ハンドリングの堅牢化
+
+**ファイル**:
+
+- `backend/services/redis.go`
+- `backend/middleware/ratelimit.go`
+
+**実装内容**:
+
+- Redis 初期化失敗時はアプリ起動を中止（フォールバックでのサイレント劣化を阻止）
+- Redis 未初期化時のパニック防止ガードを追加
+- レート制限超過時に `Retry-After` ヘッダーを返却し、クライアントが指数バックオフに利用可能
+
+**効果**:
+
+- レートリミッタの安定運用
+- クライアント側の再試行制御を支援し、DoS 耐性を強化
+
+---
+
+### 10. ✅ Correlation-ID による監査ログ拡充
+
+**ファイル**:
+
+- `backend/middleware/correlation.go`
+- `backend/utils/logger.go`
+- `backend/controllers/payment.go` 他
+
+**実装内容**:
+
+- すべてのリクエストに `X-Correlation-ID` を付与し、レスポンスヘッダーにも伝播
+- ログ出力は PII マスキングに加えて `[cid=...]` プレフィックスで相関 ID を自動付与
+- `gin.Context` → `context.Context` に相関 ID を紐付け、サービス層で一貫して利用
+
+**効果**:
+
+- API コールチェーンを横断した監査トレースが可能
+- インシデント調査やイベント集約が容易に
+
+---
+
+### 11. ✅ Docker / Compose ハードニング
+
+**ファイル**:
+
+- `backend/Dockerfile`
+- `docker-compose.yml`
+- `docker-compose.prod.yml`
+
+**実装内容**:
+
+- アプリコンテナを非 root ユーザーで実行し、ビルド後に権限を `appuser` に委譲
+- `read_only`, `no-new-privileges`, `cap_drop: [ALL]`, `tmpfs:/tmp` を適用
+- `.env` のフルマウントを廃止し、Secrets/環境変数起点の注入へ移行
+
+**効果**:
+
+- コンテナ breakout や権限昇格のリスク軽減
+- 誤設定による平文シークレット露出を防止
+
+---
+
+---
+
 ### 7. ✅ データマイグレーションスクリプト
 
 **ファイル**: 新規 `backend/scripts/migrate_payment_security.go`

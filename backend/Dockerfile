@@ -11,6 +11,10 @@ COPY . .
 
 RUN go build -o main .
 
+RUN adduser -D -s /bin/sh appuser && chown -R appuser:appuser /app
+
+USER appuser
+
 EXPOSE 8080
 
 CMD ["./main"]
