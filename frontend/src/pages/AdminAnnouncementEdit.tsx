@@ -79,7 +79,7 @@ const AdminAnnouncementEdit: React.FC = () => {
     try {
       // トークンが自動的に使用されるようになったため、このチェックは不要になりました
       // ただし、ログイン状態のチェックとして残しておくこともできます
-      if (!localStorage.getItem("token")) {
+      if (!localStorage.getItem("accessToken")) {
         throw new Error("認証情報が見つかりません");
       }
 
@@ -110,7 +110,7 @@ const AdminAnnouncementEdit: React.FC = () => {
     try {
       // トークンが自動的に使用されるようになったため、このチェックは不要になりました
       // ただし、ログイン状態のチェックとして残しておくこともできます
-      if (!localStorage.getItem("token")) {
+      if (!localStorage.getItem("accessToken")) {
         throw new Error("認証情報が見つかりません");
       }
 

@@ -33,7 +33,7 @@ const AdminAnnouncementCreate: React.FC = () => {
     }
 
     // ログイン状態とトークンの確認
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("accessToken");
     if (!token) {
       console.error("認証トークンが見つかりません");
       navigate("/login");
@@ -51,7 +51,7 @@ const AdminAnnouncementCreate: React.FC = () => {
 
     // デバッグ情報を出力
     console.log("現在のユーザー情報:", user);
-    console.log("認証トークン存在確認:", !!localStorage.getItem("token"));
+    console.log("認証トークン存在確認:", !!localStorage.getItem("accessToken"));
 
     // 入力チェック
     if (!title.trim()) {
@@ -68,7 +68,7 @@ const AdminAnnouncementCreate: React.FC = () => {
 
     try {
       // 認証情報の再確認
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("accessToken");
       if (!token) {
         throw new Error("認証情報が見つかりません");
       }
@@ -76,7 +76,7 @@ const AdminAnnouncementCreate: React.FC = () => {
       // デバッグ用：トークンの表示
       console.log(
         "認証トークン (最初の20文字):",
-        token.substring(0, 20) + "..."
+        token?.substring(0, 20) + "..."
       );
 
       // 明示的なログをさらに追加

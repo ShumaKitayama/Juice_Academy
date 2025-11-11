@@ -89,9 +89,10 @@ func TestBasicLoginHandler(c *gin.Context) {
 
 	// 簡単なJWTトークンのシミュレーション
 	isAdmin := strings.Contains(req.Email, "admin")
-	
+
 	c.JSON(http.StatusOK, gin.H{
-		"token": "test_jwt_token_" + req.Email,
+		"accessToken": "test_jwt_token_" + req.Email,
+		"csrfToken":   "test_csrf_token_" + req.Email,
 		"user": gin.H{
 			"id":        "test_user_id",
 			"email":     req.Email,
@@ -141,7 +142,7 @@ func TestBasicAnnouncementByIdHandler(c *gin.Context) {
 
 	// テスト用の有効なIDをチェック
 	validIds := []string{"announcement_1", "announcement_2"}
-	
+
 	validId := false
 	for _, validID := range validIds {
 		if id == validID {

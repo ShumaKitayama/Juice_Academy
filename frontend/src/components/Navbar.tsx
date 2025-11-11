@@ -11,8 +11,8 @@ const Navbar: React.FC = () => {
   // ユーザーが管理者かどうかをチェック
   const isAdmin = user?.role === "admin" || user?.isAdmin === true;
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/login");
   };
 

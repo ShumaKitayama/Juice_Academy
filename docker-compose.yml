@@ -19,8 +19,13 @@ services:
       - APP_ENV=${APP_ENV}
       - APP_PORT=${APP_PORT}
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
-    volumes:
-      - ./.env:/app/.env
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
   frontend:
     build: ./frontend
@@ -35,7 +40,6 @@ services:
       - VITE_STRIPE_PRICE_ID=${VITE_STRIPE_PRICE_ID}
     volumes:
       - ./frontend/src:/app/src
-      - ./.env:/app/.env
     # コンテナが終了しないようにするための最小限の設定
     tty: true
     stdin_open: true

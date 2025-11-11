@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -29,7 +30,6 @@ var announcementCollection *mongo.Collection
 // InitAnnouncementCollection はお知らせのコレクションを初期化します
 func InitAnnouncementCollection(db *mongo.Database) {
 	announcementCollection = db.Collection("announcements")
-	fmt.Println("お知らせコレクションが初期化されました")
 }
 
 // GetAnnouncementsHandler はお知らせ一覧を取得するハンドラ
@@ -41,10 +41,12 @@ func GetAnnouncementsHandler(c *gin.Context) {
 	findOptions.SetSort(bson.M{"created_at": -1})
 
 	// データベースからお知らせを取得
-	fmt.Println("GetAnnouncementsHandler: お知らせの取得を開始します")
 	cursor, err := announcementCollection.Find(ctx, bson.M{}, findOptions)
 	if err != nil {
-		fmt.Printf("GetAnnouncementsHandler: お知らせ取得エラー: %v\n", err)
+		// セキュリティ: 本番環境ではエラーの詳細をログに出力しない
+		if os.Getenv("APP_ENV") != "production" {
+			fmt.Printf("GetAnnouncementsHandler: お知らせ取得エラー: %v\n", err)
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "お知らせの取得に失敗しました"})
 		return
 	}
@@ -55,7 +57,10 @@ func GetAnnouncementsHandler(c *gin.Context) {
 
 	// カーソルから結果を取得
 	if err := cursor.All(ctx, &announcements); err != nil {
-		fmt.Printf("GetAnnouncementsHandler: お知らせデータ処理エラー: %v\n", err)
+		// セキュリティ: 本番環境ではエラーの詳細をログに出力しない
+		if os.Getenv("APP_ENV") != "production" {
+			fmt.Printf("GetAnnouncementsHandler: お知らせデータ処理エラー: %v\n", err)
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "お知らせデータの処理に失敗しました"})
 		return
 	}
@@ -64,8 +69,6 @@ func GetAnnouncementsHandler(c *gin.Context) {
 	if announcements == nil {
 		announcements = []Announcement{}
 	}
-
-	fmt.Printf("GetAnnouncementsHandler: 取得したお知らせ数: %d\n", len(announcements))
 
 	// フロントエンドに整合する形式でレスポンスを返す
 	// データをラップするか、直接配列を返すかは、フロントエンドの期待に合わせる
@@ -80,12 +83,13 @@ func CreateAnnouncementHandler(c *gin.Context) {
 	// リクエストボディをパース
 	var announcement Announcement
 	if err := c.ShouldBindJSON(&announcement); err != nil {
-		fmt.Printf("CreateAnnouncementHandler: リクエスト解析エラー: %v\n", err)
+		// セキュリティ: 本番環境ではエラーの詳細をログに出力しない
+		if os.Getenv("APP_ENV") != "production" {
+			fmt.Printf("CreateAnnouncementHandler: リクエスト解析エラー: %v\n", err)
+		}
 		c.JSON(http.StatusBadRequest, gin.H{"error": "無効なリクエスト形式です"})
 		return
 	}
-
-	fmt.Printf("CreateAnnouncementHandler: お知らせ作成リクエスト: タイトル=%s\n", announcement.Title)
 
 	// 現在時刻をセット
 	now := time.Now()
@@ -96,14 +100,16 @@ func CreateAnnouncementHandler(c *gin.Context) {
 	ctx := context.Background()
 	result, err := announcementCollection.InsertOne(ctx, announcement)
 	if err != nil {
-		fmt.Printf("CreateAnnouncementHandler: お知らせ作成エラー: %v\n", err)
+		// セキュリティ: 本番環境ではエラーの詳細をログに出力しない
+		if os.Getenv("APP_ENV") != "production" {
+			fmt.Printf("CreateAnnouncementHandler: お知らせ作成エラー: %v\n", err)
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "お知らせの作成に失敗しました"})
 		return
 	}
 
 	// IDをセット
 	announcement.ID = result.InsertedID.(primitive.ObjectID)
-	fmt.Printf("CreateAnnouncementHandler: 新しいお知らせを作成しました: ID=%s\n", announcement.ID.Hex())
 
 	c.JSON(http.StatusCreated, announcement)
 }
@@ -219,28 +225,26 @@ func GetAnnouncementByIdHandler(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
-		fmt.Printf("GetAnnouncementByIdHandler: 無効なID形式: %s\n", idStr)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "無効なお知らせIDです"})
 		return
 	}
-
-	fmt.Printf("GetAnnouncementByIdHandler: お知らせ取得開始 ID=%s\n", idStr)
 
 	var announcement Announcement
 	ctx := context.Background()
 	err = announcementCollection.FindOne(ctx, bson.M{"_id": id}).Decode(&announcement)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			fmt.Printf("GetAnnouncementByIdHandler: お知らせが見つかりません ID=%s\n", idStr)
 			c.JSON(http.StatusNotFound, gin.H{"error": "お知らせが見つかりません"})
 			return
 		}
-		fmt.Printf("GetAnnouncementByIdHandler: データベースエラー: %v\n", err)
+		// セキュリティ: 本番環境ではエラーの詳細をログに出力しない
+		if os.Getenv("APP_ENV") != "production" {
+			fmt.Printf("GetAnnouncementByIdHandler: データベースエラー: %v\n", err)
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "お知らせの取得に失敗しました"})
 		return
 	}
 
-	fmt.Printf("GetAnnouncementByIdHandler: お知らせ取得成功 ID=%s タイトル=%s\n", idStr, announcement.Title)
 	c.JSON(http.StatusOK, announcement)
 }
 

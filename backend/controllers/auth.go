@@ -1,21 +1,18 @@
 package controllers
 
 import (
-    "context"
-    "fmt"
-    "juice_academy_backend/services"
-    "net/http"
-    "os"
+	"context"
+	"juice_academy_backend/services"
+	"net/http"
+	"os"
 	"regexp"
 	"time"
 	"unicode"
 
-    jwt "github.com/golang-jwt/jwt/v5"
-    "github.com/gin-gonic/gin"
-    "github.com/google/uuid"
-    "go.mongodb.org/mongo-driver/bson"
-    "go.mongodb.org/mongo-driver/bson/primitive"
-    "go.mongodb.org/mongo-driver/mongo"
+	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -63,9 +60,9 @@ func validatePassword(password string) bool {
 	if len(password) < 8 {
 		return false
 	}
-	
+
 	var hasUpper, hasLower, hasDigit bool
-	
+
 	for _, char := range password {
 		switch {
 		case unicode.IsUpper(char):
@@ -76,7 +73,7 @@ func validatePassword(password string) bool {
 			hasDigit = true
 		}
 	}
-	
+
 	// 大文字、小文字、数字がすべて含まれている必要がある
 	return hasUpper && hasLower && hasDigit
 }
@@ -152,7 +149,8 @@ func RegisterHandler(c *gin.Context) {
 	})
 }
 
-// LoginHandler はログイン処理とJWT発行を行うハンドラ
+// LoginHandler はログイン処理（2FA必須）を行うハンドラ
+// パスワード認証後、OTPをメール送信し、2FA画面への遷移を指示します
 func LoginHandler(c *gin.Context) {
 	var req struct {
 		Email    string `json:"email" binding:"required,email"`
@@ -178,35 +176,118 @@ func LoginHandler(c *gin.Context) {
 		return
 	}
 
-	// 一意のJWT IDを生成
-	jti := uuid.New().String()
-	expiry := time.Now().Add(time.Hour * 72)
-	
-	// JWT生成
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"jti":     jti,
-		"user_id": user.ID.Hex(),
-		"email":   user.Email,
-		"role":    user.Role,
-		"isAdmin": user.IsAdmin,
-		"iat":     time.Now().Unix(),
-		"exp":     expiry.Unix(),
+	// パスワード認証成功 - 2FA画面への遷移を指示
+	c.JSON(http.StatusOK, gin.H{
+		"message":     "パスワード認証が完了しました。2段階認証を開始してください。",
+		"require_2fa": true,
+		"email":       user.Email,
 	})
+}
 
-	tokenString, err := token.SignedString(jwtSecret)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "認証トークンの生成に失敗しました"})
+// LogoutHandler はログアウト処理とJWTの無効化を行うハンドラ
+func LogoutHandler(c *gin.Context) {
+	if jtiValue, exists := c.Get("jti"); exists {
+		if jtiStr, ok := jtiValue.(string); ok && jtiStr != "" {
+			expiration := 72 * time.Hour // デフォルト値
+			if expClaim, expExists := c.Get("exp"); expExists {
+				if expUnix, ok := expClaim.(float64); ok {
+					expTime := time.Unix(int64(expUnix), 0)
+					if expTime.After(time.Now()) {
+						expiration = time.Until(expTime)
+					}
+				}
+			}
+			if err := services.BlacklistToken(jtiStr, expiration); err != nil {
+				// 失敗してもユーザー体験を優先して継続
+			}
+		}
+	}
+
+	if refreshToken, err := c.Cookie("refresh_token"); err == nil && refreshToken != "" {
+		ctx := context.Background()
+		_ = revokeRefreshToken(ctx, refreshToken)
+	}
+	clearRefreshCookie(c)
+
+	c.JSON(http.StatusOK, gin.H{"message": "ログアウトしました"})
+}
+
+// RefreshTokenHandler はアクセストークンを再発行するハンドラ
+func RefreshTokenHandler(c *gin.Context) {
+	refreshToken, err := c.Cookie("refresh_token")
+	if err != nil || refreshToken == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "リフレッシュトークンが見つかりません"})
 		return
 	}
 
-    // デバッグログは本番で出さない
-    if os.Getenv("APP_ENV") != "production" {
-        fmt.Printf("生成されたトークン情報(概要): user_id=%s, role=%s, isAdmin=%v\n",
-            user.ID.Hex(), user.Role, user.IsAdmin)
-    }
+	csrfToken := c.GetHeader("X-CSRF-Token")
+	if csrfToken == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "CSRFトークンが必要です"})
+		return
+	}
+
+	ctx := context.Background()
+	existing, err := findActiveRefreshToken(ctx, refreshToken)
+	if err != nil {
+		clearRefreshCookie(c)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "リフレッシュトークンが無効です"})
+		return
+	}
+
+	if hashToken(csrfToken) != existing.CSRFHash {
+		_ = revokeRefreshToken(ctx, refreshToken)
+		clearRefreshCookie(c)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "CSRFトークンが無効です"})
+		return
+	}
+
+	var user User
+	if err := userCollection.FindOne(ctx, bson.M{"_id": existing.UserID}).Decode(&user); err != nil {
+		_ = revokeRefreshToken(ctx, refreshToken)
+		clearRefreshCookie(c)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "ユーザー情報の取得に失敗しました"})
+		return
+	}
+
+	accessToken, err := generateAccessToken(user)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "アクセストークンの生成に失敗しました"})
+		return
+	}
+
+	var newRefreshToken, newCSRFToken string
+	for i := 0; i < 3; i++ {
+		if newRefreshToken, err = generateSecureToken(64); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "リフレッシュトークンの生成に失敗しました"})
+			return
+		}
+		if newCSRFToken, err = generateSecureToken(32); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "CSRFトークンの生成に失敗しました"})
+			return
+		}
+
+		err = rotateRefreshToken(ctx, existing, newRefreshToken, newCSRFToken, c.Request.UserAgent(), c.ClientIP())
+		if err != nil {
+			if mongo.IsDuplicateKeyError(err) {
+				continue
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "リフレッシュトークンの更新に失敗しました"})
+			return
+		}
+		break
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "リフレッシュトークンの更新に失敗しました"})
+		return
+	}
+
+	setRefreshCookie(c, newRefreshToken, int(refreshTokenDuration.Seconds()))
 
 	c.JSON(http.StatusOK, gin.H{
-		"token": tokenString,
+		"message":     "アクセストークンを更新しました",
+		"accessToken": accessToken,
+		"expiresIn":   int(accessTokenDuration.Seconds()),
+		"csrfToken":   newCSRFToken,
 		"user": gin.H{
 			"id":        user.ID,
 			"email":     user.Email,
@@ -216,80 +297,4 @@ func LoginHandler(c *gin.Context) {
 			"isAdmin":   user.IsAdmin,
 		},
 	})
-}
-
-// Login2FAHandler は2段階認証付きログインの第1段階（パスワード検証のみ）を行うハンドラ
-func Login2FAHandler(c *gin.Context) {
-	var req struct {
-		Email    string `json:"email" binding:"required,email"`
-		Password string `json:"password" binding:"required"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "不正な入力データです"})
-		return
-	}
-
-	var user User
-	ctx := context.Background()
-	err := userCollection.FindOne(ctx, bson.M{"email": req.Email}).Decode(&user)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "メールアドレスまたはパスワードが正しくありません"})
-		return
-	}
-
-	// パスワード検証
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "メールアドレスまたはパスワードが正しくありません"})
-		return
-	}
-
-	// パスワード認証成功 - OTPを送信する必要があることを通知
-	c.JSON(http.StatusOK, gin.H{
-		"message": "パスワード認証が完了しました。2段階認証を開始してください。",
-		"require_2fa": true,
-		"email": user.Email,
-	})
-}
-
-// LogoutHandler はログアウト処理とJWTの無効化を行うハンドラ
-func LogoutHandler(c *gin.Context) {
-	// JWTからjtiを取得
-	jti, exists := c.Get("jti")
-	if !exists {
-		// jtiが存在しない場合でもログアウトは成功とする
-		c.JSON(http.StatusOK, gin.H{"message": "ログアウトしました"})
-		return
-	}
-
-	jtiStr, ok := jti.(string)
-	if !ok {
-		c.JSON(http.StatusOK, gin.H{"message": "ログアウトしました"})
-		return
-	}
-
-	// トークンをブラックリストに追加
-	// 有効期限までの残り時間を計算
-	expClaim, expExists := c.Get("exp")
-	var expiration time.Duration = 72 * time.Hour // デフォルト値
-	
-	if expExists {
-		if expUnix, ok := expClaim.(float64); ok {
-			expTime := time.Unix(int64(expUnix), 0)
-			if expTime.After(time.Now()) {
-				expiration = time.Until(expTime)
-			}
-		}
-	}
-
-	err := services.BlacklistToken(jtiStr, expiration)
-	if err != nil {
-		fmt.Printf("トークンのブラックリスト登録エラー: %v\n", err)
-		// エラーが発生してもログアウトは成功とする
-	}
-
-    if os.Getenv("APP_ENV") != "production" {
-        fmt.Printf("ログアウト成功: jti=%s\n", jtiStr)
-    }
-    c.JSON(http.StatusOK, gin.H{"message": "ログアウトしました"})
 }
