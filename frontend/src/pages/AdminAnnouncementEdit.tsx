@@ -48,8 +48,7 @@ const AdminAnnouncementEdit: React.FC = () => {
         setTitle(data.title);
         setContent(data.content);
         setLoading(false);
-      } catch (err) {
-        console.error("お知らせの取得に失敗しました", err);
+      } catch {
         setError("お知らせの取得に失敗しました");
         setLoading(false);
       }
@@ -96,8 +95,7 @@ const AdminAnnouncementEdit: React.FC = () => {
       setTimeout(() => {
         navigate("/admin/announcements");
       }, 3000);
-    } catch (err) {
-      console.error("お知らせの更新に失敗しました", err);
+    } catch {
       setError("お知らせの更新に失敗しました");
       setSubmitting(false);
     }
@@ -127,8 +125,7 @@ const AdminAnnouncementEdit: React.FC = () => {
       setTimeout(() => {
         navigate("/admin/announcements");
       }, 3000);
-    } catch (err) {
-      console.error("お知らせの削除に失敗しました", err);
+    } catch {
       setError("お知らせの削除に失敗しました");
       setSubmitting(false);
     }

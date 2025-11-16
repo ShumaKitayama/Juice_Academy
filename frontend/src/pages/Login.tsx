@@ -25,7 +25,6 @@ const Login: React.FC = () => {
   // 認証済みユーザーを自動的にホームページにリダイレクト
   React.useEffect(() => {
     if (auth.isAuthenticated && !auth.loading) {
-      console.log("認証済みユーザーをホームページにリダイレクト");
       navigate("/", { replace: true });
     }
   }, [auth.isAuthenticated, auth.loading, navigate]);

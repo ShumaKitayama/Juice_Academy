@@ -20,20 +20,16 @@ const AdminAnnouncementList: React.FC = () => {
   useEffect(() => {
     // 管理者権限チェック
     if (!user || user.role !== "admin") {
-      console.error("管理者権限が必要です。現在のユーザー:", user);
       navigate("/");
       return;
     }
-
-    console.log("管理者としてログイン中:", user);
 
     const fetchAnnouncements = async () => {
       try {
         const data = await getAllAnnouncements();
         setAnnouncements(data);
         setLoading(false);
-      } catch (err) {
-        console.error("お知らせの取得に失敗しました", err);
+      } catch {
         setError("お知らせの取得に失敗しました");
         setLoading(false);
       }

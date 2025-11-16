@@ -136,21 +136,74 @@ func CreateStripeCustomerHandler(c *gin.Context) {
 		return
 	}
 
-	// Stripeに顧客を作成
-	params := &stripe.CustomerParams{
-		Email: stripe.String(user.Email),
-		Name:  stripe.String(user.NameKana),
+	// Stripe側で既存の顧客を検索（メールアドレスで検索）
+	var stripeCustomer *stripe.Customer
+	customerListParams := &stripe.CustomerListParams{}
+	customerListParams.Email = stripe.String(user.Email)
+	customerListParams.Limit = stripe.Int64(10) // 複数の顧客が存在する可能性を考慮
+
+	customerIter := customer.List(customerListParams)
+	foundValidCustomer := false
+	
+	// メールアドレスが一致する顧客の中から、このユーザーに紐づいている顧客を探す
+	for customerIter.Next() {
+		existingCustomer := customerIter.Customer()
+		
+		// メタデータにuser_idが含まれている場合、それが現在のユーザーと一致するかチェック
+		if metaUserID, exists := existingCustomer.Metadata["user_id"]; exists {
+			if metaUserID == userID.Hex() {
+				// 現在のユーザーに紐づいている顧客を見つけた
+				stripeCustomer = existingCustomer
+				foundValidCustomer = true
+				utils.LogInfoCtx(c.Request.Context(), "CreateStripeCustomer", "Found existing Stripe customer: "+stripeCustomer.ID+" for user: "+userID.Hex())
+				
+				// 名前とstudent_idを最新情報に更新
+				updateParams := &stripe.CustomerParams{}
+				if user.NameKana != "" && user.NameKana != existingCustomer.Name {
+					updateParams.Name = stripe.String(user.NameKana)
+				}
+				if user.StudentID != "" {
+					updateParams.AddMetadata("student_id", user.StudentID)
+				}
+				
+				if updateParams.Name != nil || len(updateParams.Metadata) > 0 {
+					_, err = customer.Update(stripeCustomer.ID, updateParams)
+					if err != nil {
+						utils.LogWarningCtx(c.Request.Context(), "CreateStripeCustomer", "Failed to update customer info: "+err.Error())
+					}
+				}
+				break
+			} else {
+				// 同じメールアドレスだが別のユーザーに紐づいている顧客（通常は起こらないはず）
+				utils.LogWarningCtx(c.Request.Context(), "CreateStripeCustomer", 
+					"Found customer "+existingCustomer.ID+" with same email but different user_id (expected: "+userID.Hex()+", got: "+metaUserID+")")
+			}
+		}
+		// メタデータにuser_idがない場合は、古いデータの可能性があるのでスキップ
 	}
 
-	// メタデータをセット
-	params.AddMetadata("user_id", userID.Hex())
-	params.AddMetadata("student_id", user.StudentID)
+	if !foundValidCustomer {
+		// 既存の顧客が見つからない場合、新規作成
+		params := &stripe.CustomerParams{
+			Email: stripe.String(user.Email),
+			Name:  stripe.String(user.NameKana),
+		}
 
-	stripeCustomer, err := customer.New(params)
-	if err != nil {
-		utils.LogErrorCtx(c.Request.Context(), "CreateStripeCustomer", err, "Failed to create Stripe customer")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Stripe顧客の作成に失敗しました"})
-		return
+		// メタデータをセット
+		params.AddMetadata("user_id", userID.Hex())
+		params.AddMetadata("student_id", user.StudentID)
+
+		// Idempotency keyを設定（同時リクエスト対策）
+		idempotencyKey := "customer-create:" + userID.Hex()
+		params.SetIdempotencyKey(idempotencyKey)
+
+		stripeCustomer, err = customer.New(params)
+		if err != nil {
+			utils.LogErrorCtx(c.Request.Context(), "CreateStripeCustomer", err, "Failed to create Stripe customer")
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Stripe顧客の作成に失敗しました"})
+			return
+		}
+		utils.LogInfoCtx(c.Request.Context(), "CreateStripeCustomer", "Created new Stripe customer: "+stripeCustomer.ID+" for email: "+user.Email)
 	}
 
 	// MongoDB に支払い情報を保存

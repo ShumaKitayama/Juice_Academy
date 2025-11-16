@@ -56,8 +56,7 @@ const Subscription: React.FC = () => {
       try {
         const response = await paymentAPI.getSubscriptionStatus();
         setSubscriptionStatus(response.data);
-      } catch (err) {
-        console.error("サブスクリプション状態の確認に失敗しました", err);
+      } catch {
         // エラー時はサブスクリプションなしとして扱う
         setSubscriptionStatus({
           hasActiveSubscription: false,

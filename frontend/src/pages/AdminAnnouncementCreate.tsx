@@ -27,7 +27,6 @@ const AdminAnnouncementCreate: React.FC = () => {
   useEffect(() => {
     // 管理者権限チェック
     if (!user || user.role !== "admin") {
-      console.error("管理者権限が必要です。現在のユーザー:", user);
       navigate("/");
       return;
     }
@@ -35,23 +34,15 @@ const AdminAnnouncementCreate: React.FC = () => {
     // ログイン状態とトークンの確認
     const token = localStorage.getItem("accessToken");
     if (!token) {
-      console.error("認証トークンが見つかりません");
       navigate("/login");
       return;
     }
-
-    console.log("管理者としてログイン中:", user);
-    console.log("認証トークン (抜粋):", token.substring(0, 20) + "...");
   }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
-
-    // デバッグ情報を出力
-    console.log("現在のユーザー情報:", user);
-    console.log("認証トークン存在確認:", !!localStorage.getItem("accessToken"));
 
     // 入力チェック
     if (!title.trim()) {
@@ -73,35 +64,16 @@ const AdminAnnouncementCreate: React.FC = () => {
         throw new Error("認証情報が見つかりません");
       }
 
-      // デバッグ用：トークンの表示
-      console.log(
-        "認証トークン (最初の20文字):",
-        token?.substring(0, 20) + "..."
-      );
+      await createAnnouncement({ title, content });
+      setSuccess(true);
+      setLoading(false);
 
-      // 明示的なログをさらに追加
-      console.log("お知らせ作成処理を開始します");
-
-      try {
-        await createAnnouncement({ title, content });
-        console.log("お知らせ作成成功");
-        setSuccess(true);
-        setLoading(false);
-
-        // 3秒後に一覧ページへリダイレクト
-        setTimeout(() => {
-          navigate("/admin/announcements");
-        }, 3000);
-      } catch (apiError: unknown) {
-        const error = apiError as ApiError;
-        console.error("API呼び出し中のエラー:", apiError);
-        console.error("エラーレスポンス:", error.response?.data);
-        throw apiError;
-      }
+      // 3秒後に一覧ページへリダイレクト
+      setTimeout(() => {
+        navigate("/admin/announcements");
+      }, 3000);
     } catch (err: unknown) {
       const apiError = err as ApiError;
-      console.error("お知らせの作成に失敗しました", err);
-      // より詳細なエラーメッセージを表示
       setError(
         apiError.response?.data?.error || "お知らせの作成に失敗しました"
       );

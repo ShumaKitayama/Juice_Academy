@@ -31,7 +31,6 @@ const TwoFactorAuth: React.FC = () => {
   // 認証済みユーザーを自動的にホームページにリダイレクト
   useEffect(() => {
     if (auth.isAuthenticated && !auth.loading) {
-      console.log("認証済みユーザーをホームページにリダイレクト");
       navigate("/", { replace: true });
       return;
     }
@@ -63,7 +62,6 @@ const TwoFactorAuth: React.FC = () => {
 
     // 既に送信中の場合は処理を中断
     if (isSubmitting) {
-      console.log("OTP認証リクエストは既に送信中です");
       return;
     }
 
@@ -189,22 +187,6 @@ const TwoFactorAuth: React.FC = () => {
           <p className="text-sm text-gray-500 mt-2">
             {email} にワンタイムパスコードを送信しました
           </p>
-
-          {/* 開発環境での注意書き */}
-          {process.env.NODE_ENV === "development" && (
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-left">
-              <p className="text-blue-800 text-xs font-medium mb-1">
-                🔧 開発モード
-              </p>
-              <p className="text-blue-600 text-xs">
-                OTPコードはバックエンドのログで確認できます：
-                <br />
-                <code className="bg-blue-100 px-1 rounded">
-                  docker-compose logs backend | tail -20
-                </code>
-              </p>
-            </div>
-          )}
         </div>
 
         <Card variant="elevated" className="mt-8">

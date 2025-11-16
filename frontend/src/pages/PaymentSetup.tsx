@@ -40,9 +40,8 @@ const PaymentSetup: React.FC = () => {
           // 既に支払い方法が登録されている場合は支払い方法管理ページにリダイレクト
           navigate("/payment-method");
         }
-      } catch (err) {
+      } catch {
         // エラーが発生しても続行（支払い方法がない可能性）
-        console.error("支払い方法の確認中にエラーが発生しました:", err);
       }
     };
 

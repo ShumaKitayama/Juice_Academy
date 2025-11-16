@@ -25,7 +25,6 @@ const AnnouncementDetail: React.FC = () => {
         setAnnouncement(data);
         setLoading(false);
       } catch (err) {
-        console.error('お知らせの取得に失敗しました', err);
         setError('お知らせの取得に失敗しました');
         setLoading(false);
       }

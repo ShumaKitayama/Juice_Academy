@@ -29,8 +29,7 @@ const PaymentHistory: React.FC = () => {
         const response = await paymentAPI.getPaymentHistory();
         setPayments(response.data.payment_history || []);
         setError(null);
-      } catch (err) {
-        console.error("支払い履歴の取得に失敗しました:", err);
+      } catch {
         setError(
           "支払い履歴の取得中にエラーが発生しました。後でもう一度お試しください。"
         );

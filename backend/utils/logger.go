@@ -18,6 +18,7 @@ var (
 	stripeSubscriptionRegex  = regexp.MustCompile(`sub_[a-zA-Z0-9]+`)
 	stripePaymentIntentRegex = regexp.MustCompile(`pi_[a-zA-Z0-9]+`)
 	stripeSetupIntentRegex   = regexp.MustCompile(`seti_[a-zA-Z0-9]+`)
+
 )
 
 type contextKey string
@@ -126,6 +127,8 @@ func MaskPII(text string) string {
 	text = stripeSetupIntentRegex.ReplaceAllStringFunc(text, func(match string) string {
 		return MaskStripeID(match)
 	})
+
+	// OTPコードのマスキングは削除（件名などに影響しないように）
 
 	return text
 }
