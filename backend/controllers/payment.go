@@ -225,6 +225,37 @@ func CreateStripeCustomerHandler(c *gin.Context) {
 
 	_, err = paymentCollection.InsertOne(ctx, payment)
 	if err != nil {
+		// レースコンディション対策: 重複キーエラーの場合は既存レコードを確認
+		if mongo.IsDuplicateKeyError(err) {
+			utils.LogInfoCtx(c.Request.Context(), "CreateStripeCustomer", "Duplicate key detected, checking existing record for user: "+userID.Hex())
+
+			// 既存レコードを再取得
+			var existingPaymentAfterInsert Payment
+			err = paymentCollection.FindOne(ctx, bson.M{"user_id": userID}).Decode(&existingPaymentAfterInsert)
+			if err != nil {
+				utils.LogErrorCtx(c.Request.Context(), "CreateStripeCustomer", err, "Failed to retrieve existing payment after duplicate key error")
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "支払い情報の確認に失敗しました"})
+				return
+			}
+
+			// Stripe顧客IDが一致しているか確認（データ整合性チェック）
+			if existingPaymentAfterInsert.StripeCustomerID != stripeCustomer.ID {
+				utils.LogErrorCtx(c.Request.Context(), "CreateStripeCustomer", nil,
+					"Data inconsistency detected: MongoDB has different Stripe customer ID (expected: "+stripeCustomer.ID+", got: "+existingPaymentAfterInsert.StripeCustomerID+")")
+				c.JSON(http.StatusConflict, gin.H{"error": "支払い情報の不整合が検出されました。サポートにお問い合わせください"})
+				return
+			}
+
+			// Stripe顧客IDが一致している場合は成功として扱う
+			utils.LogInfoCtx(c.Request.Context(), "CreateStripeCustomer", "Existing payment record matches Stripe customer, returning success for user: "+userID.Hex())
+			c.JSON(http.StatusOK, gin.H{
+				"message":            "Stripe顧客情報は既に登録されています",
+				"has_payment_method": existingPaymentAfterInsert.HasPaymentMethod,
+			})
+			return
+		}
+
+		// その他のエラーの場合
 		utils.LogErrorCtx(c.Request.Context(), "CreateStripeCustomer", err, "Failed to save payment info to DB")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "支払い情報の保存に失敗しました"})
 		return
@@ -434,14 +465,14 @@ func CreateSubscriptionHandler(c *gin.Context) {
 	// Stripe上の支払い方法確認（最低1件必要）
 	pmList := paymentmethod.List(&stripe.PaymentMethodListParams{Customer: stripe.String(payment.StripeCustomerID), Type: stripe.String("card")})
 	hasPM := pmList.Next()
-	
+
 	// イテレータのエラーをチェック
 	if err := pmList.Err(); err != nil {
 		utils.LogErrorCtx(c.Request.Context(), "CreateSubscription", err, "Failed to list payment methods")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "支払い方法の確認に失敗しました"})
 		return
 	}
-	
+
 	if !hasPM {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "登録された支払い方法がありません"})
 		return
@@ -991,28 +1022,39 @@ func CancelSubscriptionHandler(c *gin.Context) {
 	}
 
 	// Stripeでサブスクリプションをキャンセル（次回更新時）
-	// 実API呼び出しにより生産相当の挙動に近づける
 	if sub.StripeSubscriptionID != "" {
 		params := &stripe.SubscriptionParams{
 			CancelAtPeriodEnd: stripe.Bool(true),
 		}
 		// Idempotency for safety
 		params.SetIdempotencyKey("sub-cancel:" + sub.StripeSubscriptionID)
-		// Use API to mark cancel at period end
-		_, _ = subscriptionapi.Update(sub.StripeSubscriptionID, params)
-	}
 
-	// DBのサブスクリプション情報を更新
-	update := bson.M{
-		"$set": bson.M{
-			"cancel_at_period_end": true,
-			"updated_at":           time.Now(),
-		},
-	}
-	_, err = subscriptionCollection.UpdateOne(ctx, bson.M{"user_id": userID}, update)
-	if err != nil {
-		utils.LogErrorCtx(c.Request.Context(), "CancelSubscription", err, "Failed to update subscription cancellation status")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "サブスクリプション情報の更新に失敗しました"})
+		// Stripe APIを呼び出してキャンセルを設定
+		updatedSub, err := subscriptionapi.Update(sub.StripeSubscriptionID, params)
+		if err != nil {
+			utils.LogErrorCtx(c.Request.Context(), "CancelSubscription", err, "Failed to cancel subscription in Stripe")
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "サブスクリプションのキャンセルに失敗しました"})
+			return
+		}
+
+		// Stripe APIが成功した場合のみDBを更新（Stripeの実際の状態で更新）
+		update := bson.M{
+			"$set": bson.M{
+				"cancel_at_period_end": updatedSub.CancelAtPeriodEnd,
+				"status":               string(updatedSub.Status),
+				"updated_at":           time.Now(),
+			},
+		}
+		_, err = subscriptionCollection.UpdateOne(ctx, bson.M{"user_id": userID}, update)
+		if err != nil {
+			utils.LogErrorCtx(c.Request.Context(), "CancelSubscription", err, "Failed to update subscription cancellation status in DB")
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "サブスクリプション情報の更新に失敗しました"})
+			return
+		}
+	} else {
+		// StripeサブスクリプションIDがない場合はエラー
+		utils.LogErrorCtx(c.Request.Context(), "CancelSubscription", nil, "Missing Stripe subscription ID")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "サブスクリプション情報が不完全です"})
 		return
 	}
 
@@ -1053,14 +1095,15 @@ func GetSubscriptionStatusHandler(c *gin.Context) {
 	// サブスクリプションがアクティブまたは試用期間中かチェック
 	hasActiveSubscription := sub.Status == "active" || sub.Status == "trialing"
 
-	// サブスクリプション情報を返す
+	// サブスクリプション情報を返す（JSONタグに合わせてsnake_caseを使用）
 	c.JSON(http.StatusOK, gin.H{
 		"hasActiveSubscription": hasActiveSubscription,
 		"subscription": gin.H{
-			"id":                sub.StripeSubscriptionID,
-			"status":            sub.Status,
-			"currentPeriodEnd":  sub.CurrentPeriodEnd,
-			"cancelAtPeriodEnd": sub.CancelAtPeriodEnd,
+			"id":                   sub.StripeSubscriptionID,
+			"status":               sub.Status,
+			"price_id":             sub.PriceID,
+			"current_period_end":   sub.CurrentPeriodEnd,
+			"cancel_at_period_end": sub.CancelAtPeriodEnd,
 		},
 	})
 }

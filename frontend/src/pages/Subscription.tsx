@@ -22,8 +22,9 @@ interface SubscriptionStatus {
   subscription?: {
     id: string;
     status: string;
-    currentPeriodEnd: string;
-    cancelAtPeriodEnd: boolean;
+    price_id: string;
+    current_period_end: string;
+    cancel_at_period_end: boolean;
   };
 }
 
