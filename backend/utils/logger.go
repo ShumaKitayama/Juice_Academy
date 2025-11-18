@@ -127,6 +127,8 @@ func MaskPII(text string) string {
 		return MaskStripeID(match)
 	})
 
+	// OTPコードのマスキングは削除（件名などに影響しないように）
+
 	return text
 }
 

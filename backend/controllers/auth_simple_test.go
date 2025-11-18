@@ -16,14 +16,14 @@ import (
 func setupTestRouter() *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	
+
 	// テスト用のルートを設定
 	api := router.Group("/api")
 	{
 		api.POST("/register", TestBasicRegisterHandler)
 		api.POST("/login", TestBasicLoginHandler)
 	}
-	
+
 	return router
 }
 
@@ -92,10 +92,10 @@ func TestRegisterHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			response := makeRequest("POST", "/api/register", tt.requestBody)
-			
+
 			// ステータスコードの検証
 			assert.Equal(t, tt.expectedStatusCode, response.Code, tt.description)
-			
+
 			// レスポンスがJSONであることを確認
 			contentType := response.Header().Get("Content-Type")
 			assert.True(t, strings.Contains(contentType, "application/json"), "レスポンスはJSON形式であるべき")
@@ -152,10 +152,10 @@ func TestLoginHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			response := makeRequest("POST", "/api/login", tt.requestBody)
-			
+
 			// ステータスコードの検証
 			assert.Equal(t, tt.expectedStatusCode, response.Code, tt.description)
-			
+
 			// レスポンスがJSONであることを確認
 			contentType := response.Header().Get("Content-Type")
 			assert.True(t, strings.Contains(contentType, "application/json"), "レスポンスはJSON形式であるべき")

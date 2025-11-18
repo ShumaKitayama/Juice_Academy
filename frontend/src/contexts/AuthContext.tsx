@@ -68,8 +68,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           setUser(null);
           setIsAuthenticated(false);
         }
-      } catch (err) {
-        console.error("認証状態の確認中にエラーが発生しました", err);
+      } catch {
         setUser(null);
         setIsAuthenticated(false);
       } finally {

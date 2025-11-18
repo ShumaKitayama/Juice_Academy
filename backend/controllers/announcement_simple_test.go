@@ -16,14 +16,14 @@ import (
 func setupAnnouncementTestRouter() *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	
+
 	// テスト用のルートを設定
 	api := router.Group("/api")
 	{
 		api.GET("/announcements", TestBasicAnnouncementsHandler)
 		api.GET("/announcements/:id", TestBasicAnnouncementByIdHandler)
 	}
-	
+
 	return router
 }
 
@@ -61,19 +61,19 @@ func TestGetAnnouncementsHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			response := makeAnnouncementRequest("GET", "/api/announcements", nil)
-			
+
 			// ステータスコードの検証
 			assert.Equal(t, tt.expectedStatusCode, response.Code, tt.description)
-			
+
 			// レスポンスがJSONであることを確認
 			contentType := response.Header().Get("Content-Type")
 			assert.True(t, strings.Contains(contentType, "application/json"), "レスポンスはJSON形式であるべき")
-			
+
 			// レスポンスの構造を確認
 			var jsonResponse map[string]interface{}
 			err := json.Unmarshal(response.Body.Bytes(), &jsonResponse)
 			assert.NoError(t, err, "レスポンスのJSONパースに成功するべき")
-			
+
 			// 期待される属性が存在することを確認
 			_, hasAnnouncements := jsonResponse["announcements"]
 			_, hasCount := jsonResponse["count"]
@@ -109,10 +109,10 @@ func TestGetAnnouncementByIdHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			url := "/api/announcements/" + tt.announcementID
 			response := makeAnnouncementRequest("GET", url, nil)
-			
+
 			// ステータスコードの検証
 			assert.Equal(t, tt.expectedStatusCode, response.Code, tt.description)
-			
+
 			// エラーレスポンスがJSONであることを確認
 			contentType := response.Header().Get("Content-Type")
 			assert.True(t, strings.Contains(contentType, "application/json"), "レスポンスはJSON形式であるべき")

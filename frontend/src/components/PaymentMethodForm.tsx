@@ -279,10 +279,6 @@ const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({ onSuccess }) => {
               *
               セキュリティのため、カード情報は当サイトのサーバーには保存されません。
             </p>
-            <p>
-              * テスト用カード番号: 4242 4242 4242 4242 (有効期限:
-              任意の未来日付、CVC: 任意の3桁)
-            </p>
           </div>
           <div className="mt-4 flex items-center p-3 bg-blue-50 rounded-md">
             <svg

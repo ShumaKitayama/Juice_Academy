@@ -241,11 +241,11 @@ func (suite *AnnouncementIntegrationSuite) TestAnnouncementQueryIntegration() {
 		"title": bson.M{"$regex": "重要", "$options": "i"},
 	})
 	assert.NoError(suite.T(), err)
-	
+
 	var searchResults []Announcement
 	err = cursor.All(context.Background(), &searchResults)
 	assert.NoError(suite.T(), err)
-	
+
 	assert.Equal(suite.T(), 1, len(searchResults), "「重要」を含むお知らせが1つ見つかるべき")
 	assert.Equal(suite.T(), "重要なお知らせ", searchResults[0].Title)
 	cursor.Close(context.Background())
@@ -256,11 +256,11 @@ func (suite *AnnouncementIntegrationSuite) TestAnnouncementQueryIntegration() {
 		"created_at": bson.M{"$gte": oneHourAgo},
 	})
 	assert.NoError(suite.T(), err)
-	
+
 	err = cursor.All(context.Background(), &searchResults)
 	assert.NoError(suite.T(), err)
 	cursor.Close(context.Background())
-	
+
 	assert.GreaterOrEqual(suite.T(), len(searchResults), 1, "1時間以内に作成されたお知らせが存在するべき")
 
 	// カウント機能のテスト

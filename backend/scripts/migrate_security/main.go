@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -20,6 +21,27 @@ func main() {
 	fmt.Println("=== Juice Academy 決済セキュリティマイグレーション ===")
 	fmt.Println("このスクリプトは既存データの整合性をチェックします")
 	fmt.Println()
+
+	// 環境変数の読み込み（プロジェクトルートの.envファイルを探す）
+	envPaths := []string{
+		".env",          // カレントディレクトリ
+		"../.env",       // 1つ上のディレクトリ
+		"../../.env",    // 2つ上のディレクトリ（backend/）
+		"../../../.env", // 3つ上のディレクトリ（プロジェクトルート）
+	}
+
+	envLoaded := false
+	for _, envPath := range envPaths {
+		if err := godotenv.Load(envPath); err == nil {
+			envLoaded = true
+			log.Printf("✓ .envファイルを読み込みました: %s", envPath)
+			break
+		}
+	}
+
+	if !envLoaded {
+		log.Printf("警告: .envファイルが見つかりませんでした。環境変数が直接設定されていることを確認してください。")
+	}
 
 	// MongoDB接続
 	mongoURI := os.Getenv("MONGODB_URI")
@@ -303,4 +325,3 @@ func getStringField(doc bson.M, key string) string {
 	}
 	return ""
 }
-

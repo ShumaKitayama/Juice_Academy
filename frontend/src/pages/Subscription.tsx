@@ -22,8 +22,9 @@ interface SubscriptionStatus {
   subscription?: {
     id: string;
     status: string;
-    currentPeriodEnd: string;
-    cancelAtPeriodEnd: boolean;
+    price_id: string;
+    current_period_end: string;
+    cancel_at_period_end: boolean;
   };
 }
 
@@ -56,8 +57,7 @@ const Subscription: React.FC = () => {
       try {
         const response = await paymentAPI.getSubscriptionStatus();
         setSubscriptionStatus(response.data);
-      } catch (err) {
-        console.error("サブスクリプション状態の確認に失敗しました", err);
+      } catch {
         // エラー時はサブスクリプションなしとして扱う
         setSubscriptionStatus({
           hasActiveSubscription: false,

@@ -1,23 +1,23 @@
 package middleware
 
 import (
-    "net/http"
-    "net/http/httptest"
-    "os"
-    "strings"
-    "testing"
-    "time"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"strings"
+	"testing"
+	"time"
 
-    jwt "github.com/golang-jwt/jwt/v5"
-    "github.com/gin-gonic/gin"
-    "github.com/stretchr/testify/assert"
+	"github.com/gin-gonic/gin"
+	jwt "github.com/golang-jwt/jwt/v5"
+	"github.com/stretchr/testify/assert"
 )
 
 // setupJWTTestRouter はJWTテスト用のGinルーターを作成する
 func setupJWTTestRouter() *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	
+
 	// テスト用の保護されたルートを設定
 	protected := router.Group("/protected")
 	protected.Use(JWTAuthMiddleware())
@@ -28,14 +28,14 @@ func setupJWTTestRouter() *gin.Engine {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "user_id not found in context"})
 				return
 			}
-			
+
 			c.JSON(http.StatusOK, gin.H{
 				"message": "Success",
 				"user_id": userID,
 			})
 		})
 	}
-	
+
 	return router
 }
 
@@ -48,7 +48,7 @@ func generateTestToken(userID, email, role string, isAdmin bool, expiry time.Tim
 		"isAdmin": isAdmin,
 		"exp":     expiry.Unix(),
 	}
-	
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	// テスト用の固定シークレットを使用（環境変数が設定されていない場合）
 	secret := os.Getenv("JWT_SECRET")
@@ -117,23 +117,23 @@ func TestJWTAuthMiddleware(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// リクエストを作成
 			req, _ := http.NewRequest("GET", "/protected/test", nil)
-			
+
 			// 認証ヘッダーを設定
 			token := tt.setupToken()
 			if token != "" {
 				req.Header.Set("Authorization", "Bearer "+token)
 			}
-			
+
 			// レスポンスレコーダーを作成
 			w := httptest.NewRecorder()
 			router := setupJWTTestRouter()
-			
+
 			// リクエストを実行
 			router.ServeHTTP(w, req)
-			
+
 			// ステータスコードの検証
 			assert.Equal(t, tt.expectedStatusCode, w.Code, tt.description)
-			
+
 			// レスポンスがJSONであることを確認
 			contentType := w.Header().Get("Content-Type")
 			assert.True(t, strings.Contains(contentType, "application/json"), "レスポンスはJSON形式であるべき")
@@ -173,11 +173,11 @@ func TestJWTAuthMiddlewareEdgeCases(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			req, _ := http.NewRequest("GET", "/protected/test", nil)
 			req.Header.Set("Authorization", tc.authHeader)
-			
+
 			w := httptest.NewRecorder()
 			router := setupJWTTestRouter()
 			router.ServeHTTP(w, req)
-			
+
 			assert.Equal(t, tc.expectedStatusCode, w.Code, tc.description)
 		})
 	}

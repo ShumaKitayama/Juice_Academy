@@ -4,7 +4,6 @@ import (
 	"context"
 	"juice_academy_backend/services"
 	"net/http"
-	"os"
 	"regexp"
 	"time"
 	"unicode"
@@ -17,17 +16,8 @@ import (
 )
 
 var (
-	jwtSecret      []byte
 	userCollection *mongo.Collection
 )
-
-func init() {
-	secret := os.Getenv("JWT_SECRET")
-	if secret == "" {
-		panic("JWT_SECRET environment variable is required")
-	}
-	jwtSecret = []byte(secret)
-}
 
 // User はMongoDBのusersコレクションのドキュメント構造
 type User struct {

@@ -16,7 +16,7 @@ import (
 func setupOTPTestRouter() *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	
+
 	// テスト用のルートを設定
 	api := router.Group("/api")
 	{
@@ -24,7 +24,7 @@ func setupOTPTestRouter() *gin.Engine {
 		api.POST("/otp/verify", BasicVerifyOTPHandler)
 		api.POST("/otp/resend", BasicResendOTPHandler)
 	}
-	
+
 	return router
 }
 
@@ -94,10 +94,10 @@ func TestSendOTPHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			response := makeOTPRequest("POST", "/api/otp/send", tt.requestBody)
-			
+
 			// ステータスコードの検証
 			assert.Equal(t, tt.expectedStatusCode, response.Code, tt.description)
-			
+
 			// レスポンスがJSONであることを確認
 			contentType := response.Header().Get("Content-Type")
 			assert.Contains(t, contentType, "application/json", "レスポンスはJSON形式であるべき")
@@ -147,10 +147,10 @@ func TestVerifyOTPHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			response := makeOTPRequest("POST", "/api/otp/verify", tt.requestBody)
-			
+
 			// ステータスコードの検証
 			assert.Equal(t, tt.expectedStatusCode, response.Code, tt.description)
-			
+
 			// レスポンスがJSONであることを確認
 			contentType := response.Header().Get("Content-Type")
 			assert.Contains(t, contentType, "application/json", "レスポンスはJSON形式であるべき")
@@ -189,10 +189,10 @@ func TestResendOTPHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			response := makeOTPRequest("POST", "/api/otp/resend", tt.requestBody)
-			
+
 			// ステータスコードの検証
 			assert.Equal(t, tt.expectedStatusCode, response.Code, tt.description)
-			
+
 			// レスポンスがJSONであることを確認
 			contentType := response.Header().Get("Content-Type")
 			assert.Contains(t, contentType, "application/json", "レスポンスはJSON形式であるべき")
@@ -280,9 +280,9 @@ func TestOTPGeneration(t *testing.T) {
 // TestOTPValidation はOTPバリデーションのテストを行う
 func TestOTPValidation(t *testing.T) {
 	testCases := []struct {
-		name     string
-		code     string
-		isValid  bool
+		name    string
+		code    string
+		isValid bool
 	}{
 		{"有効な6桁コード", "123456", true},
 		{"有効な6桁コード（ゼロ含む）", "012345", true},
@@ -309,13 +309,13 @@ func TestOTPValidation(t *testing.T) {
 // TestOTPExpiration はOTP有効期限のテストを行う
 func TestOTPExpiration(t *testing.T) {
 	now := time.Now()
-	
+
 	// 5分後の有効期限
 	expiry := now.Add(5 * time.Minute)
-	
+
 	// 現在時刻では有効
 	assert.True(t, expiry.After(now), "OTPは現在時刻では有効であること")
-	
+
 	// 6分後では無効
 	futureTime := now.Add(6 * time.Minute)
 	assert.False(t, expiry.After(futureTime), "OTPは6分後には無効であること")

@@ -1,9 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Announcement, getAnnouncementById } from '../services/announcementService';
-import LoadingSpinner from '../components/LoadingSpinner';
-import ErrorAlert from '../components/ErrorAlert';
-import Button from '../components/Button';
+import React, { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import Button from "../components/Button";
+import ErrorAlert from "../components/ErrorAlert";
+import LoadingSpinner from "../components/LoadingSpinner";
+import {
+  Announcement,
+  getAnnouncementById,
+} from "../services/announcementService";
 
 const AnnouncementDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,7 +18,7 @@ const AnnouncementDetail: React.FC = () => {
   useEffect(() => {
     const fetchAnnouncement = async () => {
       if (!id) {
-        setError('お知らせIDが不正です');
+        setError("お知らせIDが不正です");
         setLoading(false);
         return;
       }
@@ -24,9 +27,8 @@ const AnnouncementDetail: React.FC = () => {
         const data = await getAnnouncementById(id);
         setAnnouncement(data);
         setLoading(false);
-      } catch (err) {
-        console.error('お知らせの取得に失敗しました', err);
-        setError('お知らせの取得に失敗しました');
+      } catch {
+        setError("お知らせの取得に失敗しました");
         setLoading(false);
       }
     };
@@ -39,10 +41,10 @@ const AnnouncementDetail: React.FC = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ja-JP', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    return new Date(dateString).toLocaleDateString("ja-JP", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
@@ -58,13 +60,9 @@ const AnnouncementDetail: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl mx-auto">
-          <ErrorAlert message={error || 'お知らせが見つかりませんでした'} />
+          <ErrorAlert message={error || "お知らせが見つかりませんでした"} />
           <div className="mt-6 text-center">
-            <Button
-              onClick={handleGoBack}
-              variant="outline"
-              size="medium"
-            >
+            <Button onClick={handleGoBack} variant="outline" size="medium">
               戻る
             </Button>
           </div>
@@ -79,12 +77,10 @@ const AnnouncementDetail: React.FC = () => {
         <div className="bg-white shadow overflow-hidden sm:rounded-lg">
           <div className="px-4 py-5 sm:px-6">
             <div className="flex items-center justify-between">
-              <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">{announcement.title}</h1>
-              <Button
-                onClick={handleGoBack}
-                variant="outline"
-                size="small"
-              >
+              <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">
+                {announcement.title}
+              </h1>
+              <Button onClick={handleGoBack} variant="outline" size="small">
                 戻る
               </Button>
             </div>
@@ -100,7 +96,7 @@ const AnnouncementDetail: React.FC = () => {
           <div className="border-t border-gray-200 px-4 py-5 sm:px-6">
             <div className="prose max-w-none">
               {/* コンテンツを段落に分けて表示 */}
-              {announcement.content.split('\n').map((paragraph, index) => (
+              {announcement.content.split("\n").map((paragraph, index) => (
                 <p key={index}>{paragraph}</p>
               ))}
             </div>
@@ -111,4 +107,4 @@ const AnnouncementDetail: React.FC = () => {
   );
 };
 
-export default AnnouncementDetail; 
+export default AnnouncementDetail;

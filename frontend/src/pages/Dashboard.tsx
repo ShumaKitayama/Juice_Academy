@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import AnnouncementCard from "../components/AnnouncementCard";
 import Card from "../components/Card";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -27,6 +27,13 @@ const Dashboard: React.FC = () => {
   // ユーザーが管理者かどうかをチェック
   const isAdmin = user?.role === "admin" || user?.isAdmin === true;
 
+  const navigate = useNavigate();
+
+  // 管理者メニューのナビゲーションハンドラー
+  const handleAdminNavigate = (path: string) => {
+    navigate(path);
+  };
+
   useEffect(() => {
     if (isLoading) {
       const timeout = setTimeout(() => {
@@ -52,8 +59,7 @@ const Dashboard: React.FC = () => {
       try {
         const response = await paymentAPI.getSubscriptionStatus();
         setHasActiveSubscription(response.data.hasActiveSubscription || false);
-      } catch (err) {
-        console.error("サブスクリプション状態の確認に失敗しました", err);
+      } catch {
         // エラー時はサブスクリプションなしとして扱う
         setHasActiveSubscription(false);
       } finally {
@@ -70,8 +76,7 @@ const Dashboard: React.FC = () => {
         const data = await getLatestAnnouncements(5);
         setAnnouncements(data);
         setLoading(false);
-      } catch (err) {
-        console.error("お知らせの取得に失敗しました", err);
+      } catch {
         setError("お知らせの取得に失敗しました");
         setLoading(false);
       }
@@ -356,9 +361,10 @@ const Dashboard: React.FC = () => {
               管理者メニュー
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Link
-                to="/admin/announcements"
+              <button
+                onClick={() => handleAdminNavigate("/admin/announcements")}
                 className="btn-outline w-full text-left"
+                type="button"
               >
                 <svg
                   className="w-4 h-4 mr-2"
@@ -374,10 +380,13 @@ const Dashboard: React.FC = () => {
                   />
                 </svg>
                 お知らせ管理
-              </Link>
-              <Link
-                to="/admin/announcements/create"
+              </button>
+              <button
+                onClick={() =>
+                  handleAdminNavigate("/admin/announcements/create")
+                }
                 className="btn-primary w-full text-left"
+                type="button"
               >
                 <svg
                   className="w-4 h-4 mr-2"
@@ -393,7 +402,7 @@ const Dashboard: React.FC = () => {
                   />
                 </svg>
                 新しいお知らせを作成
-              </Link>
+              </button>
             </div>
           </Card>
         )}
