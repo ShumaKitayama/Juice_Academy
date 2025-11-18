@@ -24,12 +24,12 @@ func main() {
 
 	// 環境変数の読み込み（プロジェクトルートの.envファイルを探す）
 	envPaths := []string{
-		".env",                    // カレントディレクトリ
-		"../.env",                 // 1つ上のディレクトリ
-		"../../.env",               // 2つ上のディレクトリ（backend/）
-		"../../../.env",           // 3つ上のディレクトリ（プロジェクトルート）
+		".env",          // カレントディレクトリ
+		"../.env",       // 1つ上のディレクトリ
+		"../../.env",    // 2つ上のディレクトリ（backend/）
+		"../../../.env", // 3つ上のディレクトリ（プロジェクトルート）
 	}
-	
+
 	envLoaded := false
 	for _, envPath := range envPaths {
 		if err := godotenv.Load(envPath); err == nil {
@@ -38,7 +38,7 @@ func main() {
 			break
 		}
 	}
-	
+
 	if !envLoaded {
 		log.Printf("警告: .envファイルが見つかりませんでした。環境変数が直接設定されていることを確認してください。")
 	}
@@ -325,4 +325,3 @@ func getStringField(doc bson.M, key string) string {
 	}
 	return ""
 }
-

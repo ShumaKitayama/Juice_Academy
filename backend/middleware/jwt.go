@@ -14,16 +14,16 @@ import (
 var jwtSecret []byte
 
 func init() {
-    secret := os.Getenv("JWT_SECRET")
-    if secret == "" {
-        panic("JWT_SECRET environment variable is required")
-    }
-    jwtSecret = []byte(secret)
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		panic("JWT_SECRET environment variable is required")
+	}
+	jwtSecret = []byte(secret)
 }
 
 // JWTAuthMiddleware は JWT トークンの検証を行うミドルウェア。
 func JWTAuthMiddleware() gin.HandlerFunc {
-    return func(c *gin.Context) {
+	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "認証ヘッダーがありません"})
@@ -35,12 +35,12 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
 		// トークンの検証
-        token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-            if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-                return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-            }
-            return jwtSecret, nil
-        })
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+			return jwtSecret, nil
+		})
 
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "無効なトークンです: " + err.Error()})
@@ -86,21 +86,21 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 		if jtiExists {
 			c.Set("jti", jti)
 		}
-		
+
 		// 有効期限もコンテキストに設定
 		if exp, expExists := claims["exp"]; expExists {
 			c.Set("exp", exp)
 		}
 
 		// 追加のユーザー情報をコンテキストに設定
-        if isAdmin, exists := claims["isAdmin"]; exists {
-            c.Set("is_admin", isAdmin)
-        }
+		if isAdmin, exists := claims["isAdmin"]; exists {
+			c.Set("is_admin", isAdmin)
+		}
 
-        if role, exists := claims["role"]; exists {
-            c.Set("role", role)
-        }
+		if role, exists := claims["role"]; exists {
+			c.Set("role", role)
+		}
 
-        c.Next()
-    }
+		c.Next()
+	}
 }

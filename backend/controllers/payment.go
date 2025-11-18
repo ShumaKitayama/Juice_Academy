@@ -144,11 +144,11 @@ func CreateStripeCustomerHandler(c *gin.Context) {
 
 	customerIter := customer.List(customerListParams)
 	foundValidCustomer := false
-	
+
 	// メールアドレスが一致する顧客の中から、このユーザーに紐づいている顧客を探す
 	for customerIter.Next() {
 		existingCustomer := customerIter.Customer()
-		
+
 		// メタデータにuser_idが含まれている場合、それが現在のユーザーと一致するかチェック
 		if metaUserID, exists := existingCustomer.Metadata["user_id"]; exists {
 			if metaUserID == userID.Hex() {
@@ -156,7 +156,7 @@ func CreateStripeCustomerHandler(c *gin.Context) {
 				stripeCustomer = existingCustomer
 				foundValidCustomer = true
 				utils.LogInfoCtx(c.Request.Context(), "CreateStripeCustomer", "Found existing Stripe customer: "+stripeCustomer.ID+" for user: "+userID.Hex())
-				
+
 				// 名前とstudent_idを最新情報に更新
 				updateParams := &stripe.CustomerParams{}
 				if user.NameKana != "" && user.NameKana != existingCustomer.Name {
@@ -165,7 +165,7 @@ func CreateStripeCustomerHandler(c *gin.Context) {
 				if user.StudentID != "" {
 					updateParams.AddMetadata("student_id", user.StudentID)
 				}
-				
+
 				if updateParams.Name != nil || len(updateParams.Metadata) > 0 {
 					_, err = customer.Update(stripeCustomer.ID, updateParams)
 					if err != nil {
@@ -175,7 +175,7 @@ func CreateStripeCustomerHandler(c *gin.Context) {
 				break
 			} else {
 				// 同じメールアドレスだが別のユーザーに紐づいている顧客（通常は起こらないはず）
-				utils.LogWarningCtx(c.Request.Context(), "CreateStripeCustomer", 
+				utils.LogWarningCtx(c.Request.Context(), "CreateStripeCustomer",
 					"Found customer "+existingCustomer.ID+" with same email but different user_id (expected: "+userID.Hex()+", got: "+metaUserID+")")
 			}
 		}

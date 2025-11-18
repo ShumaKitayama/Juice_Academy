@@ -18,7 +18,6 @@ var (
 	stripeSubscriptionRegex  = regexp.MustCompile(`sub_[a-zA-Z0-9]+`)
 	stripePaymentIntentRegex = regexp.MustCompile(`pi_[a-zA-Z0-9]+`)
 	stripeSetupIntentRegex   = regexp.MustCompile(`seti_[a-zA-Z0-9]+`)
-
 )
 
 type contextKey string

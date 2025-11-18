@@ -56,19 +56,19 @@ func AdminRequired() gin.HandlerFunc {
 				// クレームの取得
 				if claims, ok := token.Claims.(jwt.MapClaims); ok {
 					// トークンに isAdmin=true が含まれていれば管理者として認証
-                    if isAdmin, exists := claims["isAdmin"]; exists && isAdmin == true {
-                        c.Next()
-                        return
-                    }
+					if isAdmin, exists := claims["isAdmin"]; exists && isAdmin == true {
+						c.Next()
+						return
+					}
 
-                    // role=admin が含まれていても管理者として認証
-                    if role, exists := claims["role"]; exists && role == "admin" {
-                        c.Next()
-                        return
-                    }
-                }
-            }
-        }
+					// role=admin が含まれていても管理者として認証
+					if role, exists := claims["role"]; exists && role == "admin" {
+						c.Next()
+						return
+					}
+				}
+			}
+		}
 
 		// MongoDB からユーザー情報を取得して確認（バックアップ方法）
 		userID, err := primitive.ObjectIDFromHex(userIDStr.(string))

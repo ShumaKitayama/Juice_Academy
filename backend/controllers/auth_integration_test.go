@@ -122,7 +122,7 @@ func (suite *AuthIntegrationSuite) TestUserRegistrationIntegration() {
 	assert.Equal(suite.T(), testUser.Email, existingUser.Email, "同じメールアドレスのユーザーが存在すべき")
 }
 
-// TestUserAuthenticationIntegration は認証のMongoDB統合テストを行う  
+// TestUserAuthenticationIntegration は認証のMongoDB統合テストを行う
 func (suite *AuthIntegrationSuite) TestUserAuthenticationIntegration() {
 	if suite.client == nil {
 		suite.T().Skip("MongoDBに接続されていません")
@@ -134,7 +134,7 @@ func (suite *AuthIntegrationSuite) TestUserAuthenticationIntegration() {
 	testUser := User{
 		Role:         "student",
 		StudentID:    "auth_test_001",
-		NameKana:     "認証テストユーザー", 
+		NameKana:     "認証テストユーザー",
 		Email:        testEmail,
 		PasswordHash: "$2a$10$example.hash", // 実際のハッシュ化されたパスワード
 		CreatedAt:    time.Now(),
@@ -179,7 +179,7 @@ func (suite *AuthIntegrationSuite) TestAdminUserIntegration() {
 
 	// 冪等性のテスト（2回実行しても管理者は1人だけ）
 	SeedAdminUser()
-	
+
 	count, err := collection.CountDocuments(context.Background(), bson.M{"is_admin": true})
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), int64(1), count, "管理者ユーザーは1人だけ存在するべき")

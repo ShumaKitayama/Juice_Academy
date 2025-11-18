@@ -29,12 +29,12 @@ func main() {
 	// 環境変数の読み込み（プロジェクトルートの.envファイルを探す）
 	// 現在のディレクトリから順に親ディレクトリを探す
 	envPaths := []string{
-		".env",                    // カレントディレクトリ
-		"../.env",                 // 1つ上のディレクトリ
-		"../../.env",               // 2つ上のディレクトリ（backend/）
-		"../../../.env",           // 3つ上のディレクトリ（プロジェクトルート）
+		".env",          // カレントディレクトリ
+		"../.env",       // 1つ上のディレクトリ
+		"../../.env",    // 2つ上のディレクトリ（backend/）
+		"../../../.env", // 3つ上のディレクトリ（プロジェクトルート）
 	}
-	
+
 	envLoaded := false
 	for _, envPath := range envPaths {
 		if err := godotenv.Load(envPath); err == nil {
@@ -43,7 +43,7 @@ func main() {
 			break
 		}
 	}
-	
+
 	if !envLoaded {
 		log.Printf("警告: .envファイルが見つかりませんでした。環境変数が直接設定されていることを確認してください。")
 	}
@@ -157,7 +157,7 @@ func main() {
 			fmt.Printf("      作成日: %s\n", time.Unix(c.Created, 0).Format("2006-01-02 15:04:05"))
 			fmt.Printf("      名前: %s\n", c.Name)
 			fmt.Printf("      メール: %s\n", c.Email)
-			
+
 			// メタデータを表示
 			if userID, exists := c.Metadata["user_id"]; exists {
 				fmt.Printf("      メタデータ user_id: %s\n", userID)
@@ -260,4 +260,3 @@ func findDuplicateCustomers(ctx context.Context) map[string][]*stripe.Customer {
 
 	return duplicates
 }
-

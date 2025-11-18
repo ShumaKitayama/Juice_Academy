@@ -30,7 +30,7 @@ const AnnouncementList: React.FC = () => {
         const data = await getAllAnnouncements();
         setAnnouncements(data);
         setLoading(false);
-      } catch (err) {
+      } catch {
         setError("お知らせの取得に失敗しました");
         setLoading(false);
       }
