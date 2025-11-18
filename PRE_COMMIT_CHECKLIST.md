@@ -165,7 +165,7 @@ go fmt ./... && go vet ./...
 
 ```bash
 # プロジェクトルートにいることを確認
-pwd  # /Users/kitayamashuuma/SystemDevelopment/Juice_Academy であることを確認
+pwd  # /path/to/Juice_Academy であることを確認
 
 # フロントエンドのチェック
 echo "🔍 フロントエンドのチェックを開始..."
