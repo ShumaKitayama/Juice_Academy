@@ -182,6 +182,13 @@ func CreateStripeCustomerHandler(c *gin.Context) {
 		// メタデータにuser_idがない場合は、古いデータの可能性があるのでスキップ
 	}
 
+	// イテレータのエラーをチェック（Stripe APIの一時的なエラーなどを検出）
+	if err := customerIter.Err(); err != nil {
+		utils.LogErrorCtx(c.Request.Context(), "CreateStripeCustomer", err, "Failed to iterate over Stripe customers")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Stripe顧客の検索に失敗しました"})
+		return
+	}
+
 	if !foundValidCustomer {
 		// 既存の顧客が見つからない場合、新規作成
 		params := &stripe.CustomerParams{
@@ -427,6 +434,14 @@ func CreateSubscriptionHandler(c *gin.Context) {
 	// Stripe上の支払い方法確認（最低1件必要）
 	pmList := paymentmethod.List(&stripe.PaymentMethodListParams{Customer: stripe.String(payment.StripeCustomerID), Type: stripe.String("card")})
 	hasPM := pmList.Next()
+	
+	// イテレータのエラーをチェック
+	if err := pmList.Err(); err != nil {
+		utils.LogErrorCtx(c.Request.Context(), "CreateSubscription", err, "Failed to list payment methods")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "支払い方法の確認に失敗しました"})
+		return
+	}
+	
 	if !hasPM {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "登録された支払い方法がありません"})
 		return
@@ -654,6 +669,13 @@ func GetPaymentMethodsHandler(c *gin.Context) {
 		paymentMethods = append(paymentMethods, paymentMethod)
 	}
 
+	// イテレータのエラーをチェック
+	if err := i.Err(); err != nil {
+		utils.LogErrorCtx(c.Request.Context(), "GetPaymentMethods", err, "Failed to iterate over payment methods")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "支払い方法の取得に失敗しました"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{"paymentMethods": paymentMethods})
 }
 
@@ -725,6 +747,13 @@ func DeletePaymentMethodHandler(c *gin.Context) {
 		}
 	}
 
+	// イテレータのエラーをチェック
+	if err := i.Err(); err != nil {
+		utils.LogErrorCtx(c.Request.Context(), "DeletePaymentMethod", err, "Failed to iterate over payment methods")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "支払い方法の検索に失敗しました"})
+		return
+	}
+
 	if !found {
 		c.JSON(http.StatusNotFound, gin.H{"error": "指定された支払い方法が見つかりません"})
 		return
@@ -739,6 +768,13 @@ func DeletePaymentMethodHandler(c *gin.Context) {
 
 	remainingIter := paymentmethod.List(remainingParams)
 	hasRemainingPaymentMethods := remainingIter.Next()
+
+	// イテレータのエラーをチェック
+	if err := remainingIter.Err(); err != nil {
+		utils.LogErrorCtx(c.Request.Context(), "DeletePaymentMethod", err, "Failed to check remaining payment methods")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "支払い方法の確認に失敗しました"})
+		return
+	}
 
 	// 支払い方法がなくなった場合のみフラグを更新
 	if !hasRemainingPaymentMethods {

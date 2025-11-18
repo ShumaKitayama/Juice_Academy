@@ -228,8 +228,8 @@ stripe customers delete cus_Q0987654321xyz
 ### 3. 修正版コードのデプロイ
 
 ```bash
-# バックエンドの再起動
-cd /Users/kitayamashuuma/SystemDevelopment/Juice_Academy
+# プロジェクトルートに移動してバックエンドを再起動
+cd /path/to/Juice_Academy  # プロジェクトルートに移動
 docker-compose down
 docker-compose up --build -d
 
