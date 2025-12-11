@@ -191,7 +191,7 @@ const Register: React.FC = () => {
                   onChange={handleChange}
                 >
                   <option value="student">学生</option>
-                  <option value="teacher">教師</option>
+                  <option value="teacher">教職員</option>
                 </select>
               </div>
 

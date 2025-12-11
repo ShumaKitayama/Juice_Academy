@@ -56,7 +56,7 @@ const Profile: React.FC = () => {
                 {user.role === "student"
                   ? "学生"
                   : user.role === "teacher"
-                  ? "教師"
+                  ? "教職員"
                   : user.role === "admin"
                   ? "管理者"
                   : user.role}
