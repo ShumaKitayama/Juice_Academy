@@ -160,6 +160,7 @@ func main() {
 		// サブスクリプション関連
 		protected.GET("/subscription/status", controllers.GetSubscriptionStatusHandler)
 		protected.POST("/subscription/cancel", controllers.CancelSubscriptionHandler)
+		protected.POST("/subscription/promotion", controllers.ApplyPromotionCodeHandler)
 	}
 
 	// 管理者専用ルート

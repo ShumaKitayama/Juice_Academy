@@ -17,6 +17,7 @@ import PaymentHistory from "./pages/PaymentHistory";
 import PaymentMethod from "./pages/PaymentMethod";
 import PaymentSetup from "./pages/PaymentSetup";
 import Profile from "./pages/Profile";
+import PromotionCode from "./pages/PromotionCode";
 import Register from "./pages/Register";
 import Subscription from "./pages/Subscription";
 import SubscriptionCancel from "./pages/SubscriptionCancel";
@@ -77,6 +78,7 @@ function App() {
                   />
                   <Route path="payment-history" element={<PaymentHistory />} />
                   <Route path="payment-method" element={<PaymentMethod />} />
+                  <Route path="promotion" element={<PromotionCode />} />
                 </Route>
 
                 {/* 管理者ルート */}

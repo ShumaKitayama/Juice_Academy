@@ -271,6 +271,11 @@ export const paymentAPI = {
   cancelSubscription: async () => {
     return api.post("/subscription/cancel");
   },
+
+  // プロモーションコードを適用
+  applyPromotionCode: async (code: string) => {
+    return api.post("/subscription/promotion", { code });
+  },
 };
 
 export default api;

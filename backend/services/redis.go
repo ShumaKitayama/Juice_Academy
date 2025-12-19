@@ -24,14 +24,27 @@ func InitRedis() error {
 		DB:       0,                           // デフォルトDB
 	})
 
-	// 接続テスト
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	// 接続テスト (リトライ機能付き)
+	var err error
+	maxRetries := 5
+	for i := 0; i < maxRetries; i++ {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		_, err = client.Ping(ctx).Result()
+		cancel()
 
-	_, err := client.Ping(ctx).Result()
+		if err == nil {
+			break
+		}
+
+		if i < maxRetries-1 {
+			fmt.Printf("Redis接続失敗 (試行 %d/%d): %v - 2秒後に再試行します...\n", i+1, maxRetries, err)
+			time.Sleep(2 * time.Second)
+		}
+	}
+
 	if err != nil {
 		RedisClient = nil
-		return fmt.Errorf("Redis接続に失敗しました: %v", err)
+		return fmt.Errorf("Redis接続に失敗しました (全試行失敗): %v", err)
 	}
 
 	RedisClient = client

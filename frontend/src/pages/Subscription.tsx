@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
 import Button from "../components/Button";
 import Card from "../components/Card";
 import ErrorAlert from "../components/ErrorAlert";
@@ -31,13 +30,42 @@ interface SubscriptionStatus {
 // サブスクリプションプラン
 const subscriptionPlans = [
   {
-    id: import.meta.env.VITE_STRIPE_PRODUCT_ID, // 環境変数から商品IDを取得
-    priceId: import.meta.env.VITE_STRIPE_PRICE_ID, // 環境変数からpriceIDを取得
-    name: "juice学園",
+    id: "plan_monthly",
+    priceId: import.meta.env.VITE_STRIPE_PRICE_ID_MONTHLY,
+    name: "月額プラン",
     price: 3000,
-    description: "ドリンク飲み放題",
-    features: ["ドリンクサーバーの利用が可能"],
+    interval: "月",
+    description: "標準的な月額プラン",
+    features: ["ドリンクサーバーの利用が可能", "いつでも解約可能"],
+    color: "blue",
+  },
+  {
+    id: "plan_yearly",
+    priceId: import.meta.env.VITE_STRIPE_PRICE_ID_YEARLY,
+    name: "年額プラン",
+    price: 9800,
+    interval: "年",
+    description: "月額プランより約72%お得",
+    features: [
+      "ドリンクサーバーの利用が可能",
+      "月額プランより約72%お得",
+      "1年ごとの自動更新",
+    ],
     color: "orange",
+  },
+  {
+    id: "plan_2years",
+    priceId: import.meta.env.VITE_STRIPE_PRICE_ID_2YEARS,
+    name: "2年プラン",
+    price: 18000,
+    interval: "2年",
+    description: "長期利用でさらにお得",
+    features: [
+      "ドリンクサーバーの利用が可能",
+      "年額プランよりさらにお得",
+      "2年ごとの自動更新",
+    ],
+    color: "purple",
   },
 ];
 
@@ -76,10 +104,16 @@ const Subscription: React.FC = () => {
     return subscriptionPlans.find((plan) => plan.id === selectedPlan);
   };
 
-  // 次回請求日を計算（現在から1ヶ月後）
-  const getNextBillingDate = () => {
+  // 次回請求日を計算
+  const getNextBillingDate = (interval: string) => {
     const date = new Date();
-    date.setMonth(date.getMonth() + 1);
+    if (interval === "月") {
+      date.setMonth(date.getMonth() + 1);
+    } else if (interval === "年") {
+      date.setFullYear(date.getFullYear() + 1);
+    } else if (interval === "2年") {
+      date.setFullYear(date.getFullYear() + 2);
+    }
     return date.toLocaleDateString("ja-JP", {
       year: "numeric",
       month: "long",
@@ -95,6 +129,21 @@ const Subscription: React.FC = () => {
   // サブスクリプション登録ハンドラ
   const handleSubscribe = async () => {
     if (!selectedPlan || !user) return;
+
+    if (hasActiveSubscription && isCanceled) {
+      const isReactivation = selectedPlan === activePriceId;
+      const confirmMessage = isReactivation
+        ? `現在の契約期間（${formatDate(
+            currentPeriodEnd
+          )}まで）が残っていますが、契約を再開しますか？`
+        : `現在の契約期間（${formatDate(
+            currentPeriodEnd
+          )}まで）が残っていますが、プランを変更しますか？`;
+
+      if (!window.confirm(confirmMessage)) {
+        return;
+      }
+    }
 
     setLoading(true);
     setError(null);
@@ -129,6 +178,19 @@ const Subscription: React.FC = () => {
 
   const selectedPlanInfo = getSelectedPlanInfo();
 
+  const isCanceled = subscriptionStatus?.subscription?.cancel_at_period_end;
+  const currentPeriodEnd = subscriptionStatus?.subscription?.current_period_end;
+  const activePriceId = subscriptionStatus?.subscription?.price_id;
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "";
+    return new Date(dateString).toLocaleDateString("ja-JP", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
   // サブスクリプション状態を確認中
   if (checkingStatus) {
     return (
@@ -145,7 +207,7 @@ const Subscription: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto animate-fade-in">
+      <div className="max-w-6xl mx-auto animate-fade-in">
         <div className="text-center mb-12">
           <h1 className="text-3xl font-extrabold text-gray-900 sm:text-4xl bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
             サブスクリプションプラン
@@ -158,29 +220,62 @@ const Subscription: React.FC = () => {
         </div>
 
         {hasActiveSubscription && (
-          <Card className="mb-8 bg-green-50 border-2 border-green-200">
+          <Card
+            className={`mb-8 border-2 ${
+              isCanceled
+                ? "bg-yellow-50 border-yellow-200"
+                : "bg-green-50 border-green-200"
+            }`}
+          >
             <div className="flex items-center justify-center mb-4">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
+              <div
+                className={`w-12 h-12 rounded-full flex items-center justify-center mr-4 ${
+                  isCanceled ? "bg-yellow-100" : "bg-green-100"
+                }`}
+              >
                 <svg
-                  className="w-6 h-6 text-green-600"
+                  className={`w-6 h-6 ${
+                    isCanceled ? "text-yellow-600" : "text-green-600"
+                  }`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
+                  {isCanceled ? (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  ) : (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  )}
                 </svg>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-green-900">
-                  サブスクリプション登録済み
+                <h3
+                  className={`text-lg font-semibold ${
+                    isCanceled ? "text-yellow-900" : "text-green-900"
+                  }`}
+                >
+                  {isCanceled ? "解約予約済み" : "サブスクリプション登録済み"}
                 </h3>
-                <p className="text-sm text-green-700">
-                  現在、以下のプランをご利用中です
+                <p
+                  className={`text-sm ${
+                    isCanceled ? "text-yellow-700" : "text-green-700"
+                  }`}
+                >
+                  {isCanceled
+                    ? `現在の契約は ${formatDate(
+                        currentPeriodEnd
+                      )} に終了します。再契約またはプラン変更が可能です。`
+                    : "現在、以下のプランをご利用中です"}
                 </p>
               </div>
             </div>
@@ -189,77 +284,97 @@ const Subscription: React.FC = () => {
 
         {error && <ErrorAlert message={error} className="animate-slide-up" />}
 
-        <div className="mt-12 space-y-4 sm:mt-16 sm:space-y-0 sm:grid sm:grid-cols-1 sm:gap-6 lg:max-w-4xl lg:mx-auto">
+        <div className="mt-12 space-y-4 sm:mt-16 sm:space-y-0 sm:grid sm:grid-cols-3 sm:gap-6 lg:max-w-6xl lg:mx-auto">
           {subscriptionPlans.map((plan, index) => (
-            <div key={index} className="subscription-option">
+            <div key={index} className="subscription-option flex">
               <Card
-                className={`divide-y divide-gray-200 plan-card animate-slide-up ${
-                  plan.id === "prod_Rq1DHH7IbFPodY"
-                    ? `border-2 border-${plan.color}-500 relative`
+                className={`flex flex-col w-full divide-y divide-gray-200 plan-card animate-slide-up ${
+                  selectedPlan === plan.id
+                    ? "selected ring-2 ring-offset-2 ring-juice-orange-500"
                     : ""
-                } ${selectedPlan === plan.id ? "selected" : ""} ${
-                  hasActiveSubscription ? "opacity-90" : ""
-                }`}
+                } ${hasActiveSubscription ? "opacity-90" : ""}`}
                 style={{ animationDelay: `${index * 150}ms` }}
               >
-                {plan.id === "prod_Rq1DHH7IbFPodY" &&
-                  !hasActiveSubscription && (
-                    <div
-                      className={`absolute top-0 right-0 -mt-4 -mr-4 bg-${plan.color}-500 rounded-full px-3 py-1 text-white text-xs font-semibold transform rotate-3`}
-                    >
-                      おすすめ
-                    </div>
-                  )}
-                <div className="p-6">
+                {plan.id === "plan_yearly" && !hasActiveSubscription && (
+                  <div
+                    className={`absolute top-0 right-0 -mt-2 -mr-2 bg-${plan.color}-500 rounded-full px-3 py-1 text-white text-xs font-semibold transform rotate-3 shadow-md z-10`}
+                  >
+                    おすすめ
+                  </div>
+                )}
+                <div className="p-6 flex-1 flex flex-col">
                   <h2
-                    className={`text-lg leading-6 font-medium ${
+                    className={`text-lg leading-6 font-bold text-center ${
                       hasActiveSubscription
-                        ? "text-green-700"
-                        : `text-${plan.color}-700`
+                        ? "text-gray-700"
+                        : `text-${plan.color}-600`
                     }`}
                   >
                     {plan.name}
                   </h2>
-                  <p className="mt-4 text-sm text-gray-500">
+                  <p className="mt-4 text-sm text-gray-500 text-center h-10">
                     {plan.description}
                   </p>
-                  <p className="mt-8">
+                  <p className="mt-8 text-center">
                     <span className="text-4xl font-extrabold text-gray-900">
                       ¥{plan.price.toLocaleString()}
                     </span>
                     <span className="text-base font-medium text-gray-500">
-                      /月
+                      /{plan.interval}
                     </span>
                   </p>
-                  {hasActiveSubscription ? (
-                    <div className="mt-8 space-y-3">
-                      <div className="w-full px-4 py-3 bg-green-100 border-2 border-green-500 text-green-800 font-semibold rounded-md text-center">
-                        現在登録中のサブスク
-                      </div>
-                      <Link
-                        to="/subscription/management"
-                        className="block w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md text-center transition-colors"
-                      >
-                        サブスクリプション管理
-                      </Link>
+
+                  {hasActiveSubscription && !isCanceled ? (
+                    <div className="mt-auto space-y-3 pt-8">
+                      {subscriptionStatus?.subscription?.price_id ===
+                        plan.priceId && (
+                        <div className="w-full px-4 py-3 bg-green-100 border-2 border-green-500 text-green-800 font-semibold rounded-md text-center">
+                          選択中
+                        </div>
+                      )}
                     </div>
                   ) : (
-                    <Button
-                      type="button"
-                      onClick={() => handlePlanSelect(plan.id)}
-                      variant={selectedPlan === plan.id ? "primary" : "outline"}
-                      fullWidth
-                      className={`mt-8 btn-hover-effect ${
-                        selectedPlan === plan.id
-                          ? "bg-gradient-to-r from-blue-500 to-indigo-600"
-                          : ""
-                      }`}
-                    >
-                      {selectedPlan === plan.id ? "選択中" : "選択する"}
-                    </Button>
+                    <div className="mt-auto pt-8">
+                      {hasActiveSubscription &&
+                      activePriceId === plan.priceId &&
+                      isCanceled ? (
+                        <div className="space-y-3">
+                          <div className="w-full px-4 py-2 bg-yellow-100 border border-yellow-300 text-yellow-800 text-sm font-semibold rounded-md text-center mb-2">
+                            終了予定
+                          </div>
+                          <Button
+                            type="button"
+                            onClick={() => handlePlanSelect(plan.id)}
+                            variant="primary"
+                            fullWidth
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            {selectedPlan === plan.id
+                              ? "選択中"
+                              : "契約を再開する"}
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          type="button"
+                          onClick={() => handlePlanSelect(plan.id)}
+                          variant={
+                            selectedPlan === plan.id ? "primary" : "outline"
+                          }
+                          fullWidth
+                          className={`btn-hover-effect transition-all duration-200 ${
+                            selectedPlan === plan.id
+                              ? `bg-${plan.color}-600 hover:bg-${plan.color}-700 text-white shadow-lg transform scale-105`
+                              : "hover:bg-gray-50"
+                          }`}
+                        >
+                          {selectedPlan === plan.id ? "選択中" : "選択する"}
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </div>
-                <div className="pt-6 pb-8 px-6">
+                <div className="pt-6 pb-8 px-6 bg-gray-50 flex-1">
                   <h3 className="text-xs font-medium text-gray-900 tracking-wide uppercase">
                     含まれる機能
                   </h3>
@@ -296,14 +411,20 @@ const Subscription: React.FC = () => {
             <PaymentSummary
               planName={selectedPlanInfo.name}
               planPrice={selectedPlanInfo.price}
-              billingPeriod="月額"
-              nextBillingDate={getNextBillingDate()}
+              billingPeriod={
+                selectedPlanInfo.interval === "月"
+                  ? "月額"
+                  : selectedPlanInfo.interval === "年"
+                  ? "年額"
+                  : "2年一括"
+              }
+              nextBillingDate={getNextBillingDate(selectedPlanInfo.interval)}
               tax={10}
             />
           </div>
         )}
 
-        {!hasActiveSubscription && (
+        {(!hasActiveSubscription || isCanceled) && (
           <div className="mt-10 text-center">
             <Button
               onClick={handleSubscribe}
@@ -311,9 +432,11 @@ const Subscription: React.FC = () => {
               size="large"
               isLoading={loading}
               disabled={!selectedPlan || loading}
-              className="px-8 btn-hover-effect bg-gradient-to-r from-blue-500 to-indigo-600"
+              className="px-8 btn-hover-effect bg-gradient-to-r from-blue-500 to-indigo-600 transform hover:-translate-y-1 hover:shadow-lg transition-all duration-200"
             >
-              サブスクリプションを開始する
+              {hasActiveSubscription && isCanceled
+                ? "プランを更新・再開する"
+                : "サブスクリプションを開始する"}
             </Button>
             <p className="mt-4 text-sm text-gray-500">
               * サブスクリプションはいつでもキャンセルできます
