@@ -93,28 +93,28 @@ const Login: React.FC = () => {
 
   // ログイン成功アニメーションを表示
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50 flex items-center justify-center py-6 sm:py-12 px-3 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
-        <div className="text-center mb-10">
-          <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-2xl">J</span>
+        <div className="text-center mb-6 sm:mb-10">
+          <div className="flex justify-center mb-4 sm:mb-6">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg">
+              <span className="text-white font-bold text-xl sm:text-2xl">J</span>
             </div>
           </div>
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-2">
             Juice Academy
           </h1>
-          <p className="text-lg text-gray-600">
+          <p className="text-sm sm:text-base md:text-lg text-gray-600 px-2">
             美味しいドリンクライフを始めましょう
           </p>
         </div>
 
-        <Card variant="modern" padding="large" className="shadow-xl">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+        <Card variant="modern" padding="large" className="shadow-xl p-4 sm:p-6 md:p-8">
+          <div className="text-center mb-6 sm:mb-8">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
               アカウントにログイン
             </h2>
-            <p className="text-gray-600">
+            <p className="text-sm sm:text-base text-gray-600">
               ドリンクバーサービスをご利用ください
             </p>
           </div>
@@ -235,21 +235,20 @@ const Login: React.FC = () => {
           </div>
         </Card>
 
-        <div className="mt-8 text-center">
-          <p className="text-xs text-gray-500">
+        <div className="mt-6 sm:mt-8 text-center px-2">
+          <p className="text-xs text-gray-500 leading-relaxed">
             ログインすることで、
-            <a href="#" className="text-orange-600 hover:text-orange-700 mx-1">
+            <a href="#" className="text-orange-600 hover:text-orange-700">
               利用規約
             </a>
             と
-            <a href="#" className="text-orange-600 hover:text-orange-700 mx-1">
+            <a href="#" className="text-orange-600 hover:text-orange-700">
               プライバシーポリシー
             </a>
             に同意したことになります。
           </p>
           <p className="text-xs text-gray-400 mt-2">
-            &copy; {new Date().getFullYear()} Juice Academy. All rights
-            reserved.
+            &copy; {new Date().getFullYear()} Juice Academy. All rights reserved.
           </p>
         </div>
       </div>

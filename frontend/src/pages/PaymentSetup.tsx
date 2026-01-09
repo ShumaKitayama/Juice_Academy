@@ -101,14 +101,14 @@ const PaymentSetup: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-6 sm:py-12 px-3 sm:px-6 lg:px-8">
       <div className="max-w-lg mx-auto animate-fade-in">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-extrabold text-gray-900 sm:text-4xl bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 px-2">
             決済情報の登録
           </h1>
-          <p className="mt-2 text-lg text-gray-600">
-            サービスを利用するには、クレジットカード情報の登録が必要です。
+          <p className="mt-2 text-sm sm:text-base md:text-lg text-gray-600 px-2">
+            サービスを利用するには、カード情報の登録が必要です。
           </p>
         </div>
 
@@ -139,16 +139,16 @@ const PaymentSetup: React.FC = () => {
         )}
 
         <Card
-          className="mt-8 card-hover animate-slide-up"
+          className="mt-6 sm:mt-8 card-hover animate-slide-up"
           style={{ animationDelay: "150ms" }}
         >
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
+          <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">
             安全なお支払い
           </h3>
-          <div className="flex items-start space-x-4">
+          <div className="flex items-start space-x-3 sm:space-x-4">
             <div className="flex-shrink-0">
               <svg
-                className="h-6 w-6 text-green-500"
+                className="h-5 w-5 sm:h-6 sm:w-6 text-green-500"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -163,18 +163,16 @@ const PaymentSetup: React.FC = () => {
               </svg>
             </div>
             <div>
-              <p className="text-gray-600 text-sm">
-                当サイトでは、クレジットカード情報を直接保存せず、Stripeの安全な決済システムを利用しています。
-                カード情報はStripeのセキュアな環境で管理され、PCI
-                DSSに準拠した高度なセキュリティ対策が施されています。
+              <p className="text-gray-600 text-xs sm:text-sm leading-relaxed">
+                当サイトでは、クレジットカード情報を直接保存せず、Stripeの安全な決済システムを利用しています。カード情報はStripeのセキュアな環境で管理され、PCI DSSに準拠した高度なセキュリティ対策が施されています。
               </p>
             </div>
           </div>
 
-          <div className="mt-4 flex items-start space-x-4">
+          <div className="mt-3 sm:mt-4 flex items-start space-x-3 sm:space-x-4">
             <div className="flex-shrink-0">
               <svg
-                className="h-6 w-6 text-blue-500"
+                className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -189,17 +187,16 @@ const PaymentSetup: React.FC = () => {
               </svg>
             </div>
             <div>
-              <p className="text-gray-600 text-sm">
-                登録されたカード情報は、今後の定期支払いに使用されます。
-                いつでもマイページから支払い方法の変更や解約が可能です。
+              <p className="text-gray-600 text-xs sm:text-sm leading-relaxed">
+                登録されたカード情報は、今後の定期支払いに使用されます。いつでもマイページから支払い方法の変更や解約が可能です。
               </p>
             </div>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-gray-200">
-            <div className="flex justify-center space-x-6">
+          <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-gray-200">
+            <div className="flex justify-center space-x-4 sm:space-x-6">
               <svg
-                className="h-8 w-12"
+                className="h-6 w-10 sm:h-8 sm:w-12"
                 viewBox="0 0 48 32"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
@@ -219,7 +216,7 @@ const PaymentSetup: React.FC = () => {
                 </text>
               </svg>
               <svg
-                className="h-8 w-12"
+                className="h-6 w-10 sm:h-8 sm:w-12"
                 viewBox="0 0 48 32"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
@@ -229,7 +226,7 @@ const PaymentSetup: React.FC = () => {
                 <circle cx="30" cy="16" r="8" fill="#F79E1B" />
               </svg>
               <svg
-                className="h-8 w-12"
+                className="h-6 w-10 sm:h-8 sm:w-12"
                 viewBox="0 0 48 32"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
@@ -249,7 +246,7 @@ const PaymentSetup: React.FC = () => {
                 </text>
               </svg>
             </div>
-            <p className="text-center text-xs text-gray-500 mt-4">
+            <p className="text-center text-xs text-gray-500 mt-3 sm:mt-4">
               主要なクレジットカードがご利用いただけます
             </p>
           </div>

@@ -515,8 +515,96 @@ body {
   .btn-primary,
   .btn-secondary,
   .btn-outline {
-    padding: 10px 20px;
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+
+  /* カードのパディング調整 */
+  .card-simple {
+    padding: 16px;
+  }
+
+  .card-featured {
+    padding: 16px;
+  }
+
+  /* フォーム入力の調整 */
+  .form-input {
+    padding: 10px 14px;
+    font-size: 16px; /* iOS でのズームを防止 */
+  }
+
+  /* アラートの調整 */
+  .alert {
+    padding: 12px 16px;
+    font-size: 13px;
+  }
+
+  /* ナビゲーションリンクの調整 */
+  .nav-link {
+    padding: 10px 12px;
     font-size: 14px;
+  }
+
+  /* テーブルセルの調整 */
+  .table-modern th,
+  .table-modern td {
+    padding: 12px;
+    font-size: 13px;
+  }
+}
+
+/* 小さい画面向け追加調整 */
+@media (max-width: 480px) {
+  .btn-primary,
+  .btn-secondary,
+  .btn-outline {
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+
+  .card-simple {
+    padding: 12px;
+  }
+
+  .card-featured {
+    padding: 12px;
+  }
+
+  .form-input {
+    padding: 8px 12px;
+  }
+
+  .nav-link {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+}
+
+/* タッチデバイス向けの最適化 */
+@media (hover: none) and (pointer: coarse) {
+  /* タップターゲットを大きく */
+  .btn-primary,
+  .btn-secondary,
+  .btn-outline {
+    min-height: 44px;
+  }
+
+  .nav-link {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+
+  /* ホバー効果を削除（タッチデバイスでは不要） */
+  .btn-primary:hover,
+  .btn-secondary:hover,
+  .btn-outline:hover {
+    transform: none;
+  }
+
+  .card-modern:hover {
+    transform: none;
   }
 }
 

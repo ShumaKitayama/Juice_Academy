@@ -206,13 +206,13 @@ const Subscription: React.FC = () => {
   const hasActiveSubscription = subscriptionStatus?.hasActiveSubscription;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-6 px-3 sm:py-12 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto animate-fade-in">
-        <div className="text-center mb-12">
-          <h1 className="text-3xl font-extrabold text-gray-900 sm:text-4xl bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+        <div className="text-center mb-6 sm:mb-12">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 px-2">
             サブスクリプションプラン
           </h1>
-          <p className="mt-3 max-w-2xl mx-auto text-xl text-gray-500 sm:mt-4">
+          <p className="mt-2 sm:mt-4 max-w-2xl mx-auto text-base sm:text-xl text-gray-500 px-2">
             {hasActiveSubscription
               ? "現在登録中のプランを確認できます"
               : "あなたに最適なプランを選択してください"}
@@ -284,7 +284,7 @@ const Subscription: React.FC = () => {
 
         {error && <ErrorAlert message={error} className="animate-slide-up" />}
 
-        <div className="mt-12 space-y-4 sm:mt-16 sm:space-y-0 sm:grid sm:grid-cols-3 sm:gap-6 lg:max-w-6xl lg:mx-auto">
+        <div className="mt-6 sm:mt-12 lg:mt-16 space-y-4 md:space-y-0 md:grid md:grid-cols-3 md:gap-4 lg:gap-6 lg:max-w-6xl lg:mx-auto px-1 sm:px-0">
           {subscriptionPlans.map((plan, index) => (
             <div key={index} className="subscription-option flex">
               <Card
@@ -297,14 +297,14 @@ const Subscription: React.FC = () => {
               >
                 {plan.id === "plan_yearly" && !hasActiveSubscription && (
                   <div
-                    className={`absolute top-0 right-0 -mt-2 -mr-2 bg-${plan.color}-500 rounded-full px-3 py-1 text-white text-xs font-semibold transform rotate-3 shadow-md z-10`}
+                    className={`absolute top-0 right-0 -mt-2 -mr-2 bg-${plan.color}-500 rounded-full px-2 sm:px-3 py-1 text-white text-xs font-semibold transform rotate-3 shadow-md z-10`}
                   >
                     おすすめ
                   </div>
                 )}
-                <div className="p-6 flex-1 flex flex-col">
+                <div className="p-4 sm:p-6 flex-1 flex flex-col">
                   <h2
-                    className={`text-lg leading-6 font-bold text-center ${
+                    className={`text-base sm:text-lg leading-6 font-bold text-center ${
                       hasActiveSubscription
                         ? "text-gray-700"
                         : `text-${plan.color}-600`
@@ -312,34 +312,34 @@ const Subscription: React.FC = () => {
                   >
                     {plan.name}
                   </h2>
-                  <p className="mt-4 text-sm text-gray-500 text-center h-10">
+                  <p className="mt-2 sm:mt-4 text-xs sm:text-sm text-gray-500 text-center min-h-[2rem] sm:min-h-[2.5rem]">
                     {plan.description}
                   </p>
-                  <p className="mt-8 text-center">
-                    <span className="text-4xl font-extrabold text-gray-900">
+                  <p className="mt-4 sm:mt-8 text-center">
+                    <span className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900">
                       ¥{plan.price.toLocaleString()}
                     </span>
-                    <span className="text-base font-medium text-gray-500">
+                    <span className="text-sm sm:text-base font-medium text-gray-500">
                       /{plan.interval}
                     </span>
                   </p>
 
                   {hasActiveSubscription && !isCanceled ? (
-                    <div className="mt-auto space-y-3 pt-8">
+                    <div className="mt-auto space-y-3 pt-4 sm:pt-8">
                       {subscriptionStatus?.subscription?.price_id ===
                         plan.priceId && (
-                        <div className="w-full px-4 py-3 bg-green-100 border-2 border-green-500 text-green-800 font-semibold rounded-md text-center">
+                        <div className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-green-100 border-2 border-green-500 text-green-800 font-semibold rounded-md text-center text-sm sm:text-base">
                           選択中
                         </div>
                       )}
                     </div>
                   ) : (
-                    <div className="mt-auto pt-8">
+                    <div className="mt-auto pt-4 sm:pt-8">
                       {hasActiveSubscription &&
                       activePriceId === plan.priceId &&
                       isCanceled ? (
-                        <div className="space-y-3">
-                          <div className="w-full px-4 py-2 bg-yellow-100 border border-yellow-300 text-yellow-800 text-sm font-semibold rounded-md text-center mb-2">
+                        <div className="space-y-2 sm:space-y-3">
+                          <div className="w-full px-3 sm:px-4 py-2 bg-yellow-100 border border-yellow-300 text-yellow-800 text-xs sm:text-sm font-semibold rounded-md text-center mb-2">
                             終了予定
                           </div>
                           <Button
@@ -374,15 +374,15 @@ const Subscription: React.FC = () => {
                     </div>
                   )}
                 </div>
-                <div className="pt-6 pb-8 px-6 bg-gray-50 flex-1">
+                <div className="pt-4 sm:pt-6 pb-6 sm:pb-8 px-4 sm:px-6 bg-gray-50 flex-1">
                   <h3 className="text-xs font-medium text-gray-900 tracking-wide uppercase">
                     含まれる機能
                   </h3>
-                  <ul className="mt-6 space-y-4">
+                  <ul className="mt-3 sm:mt-6 space-y-2 sm:space-y-4">
                     {plan.features.map((feature, index) => (
                       <li key={index} className="flex items-start">
                         <svg
-                          className={`flex-shrink-0 h-5 w-5 text-${plan.color}-500 mt-0.5`}
+                          className={`flex-shrink-0 h-4 w-4 sm:h-5 sm:w-5 text-${plan.color}-500 mt-0.5`}
                           xmlns="http://www.w3.org/2000/svg"
                           viewBox="0 0 20 20"
                           fill="currentColor"
@@ -394,7 +394,7 @@ const Subscription: React.FC = () => {
                             clipRule="evenodd"
                           />
                         </svg>
-                        <span className="ml-3 text-sm text-gray-500">
+                        <span className="ml-2 sm:ml-3 text-xs sm:text-sm text-gray-500">
                           {feature}
                         </span>
                       </li>
@@ -407,7 +407,7 @@ const Subscription: React.FC = () => {
         </div>
 
         {selectedPlanInfo && (
-          <div className="mt-12 max-w-lg mx-auto animate-slide-up">
+          <div className="mt-6 sm:mt-12 max-w-lg mx-auto animate-slide-up px-2 sm:px-0">
             <PaymentSummary
               planName={selectedPlanInfo.name}
               planPrice={selectedPlanInfo.price}
@@ -425,20 +425,20 @@ const Subscription: React.FC = () => {
         )}
 
         {(!hasActiveSubscription || isCanceled) && (
-          <div className="mt-10 text-center">
+          <div className="mt-6 sm:mt-10 text-center px-2 sm:px-0">
             <Button
               onClick={handleSubscribe}
               variant="primary"
               size="large"
               isLoading={loading}
               disabled={!selectedPlan || loading}
-              className="px-8 btn-hover-effect bg-gradient-to-r from-blue-500 to-indigo-600 transform hover:-translate-y-1 hover:shadow-lg transition-all duration-200"
+              className="w-full sm:w-auto px-6 sm:px-8 btn-hover-effect bg-gradient-to-r from-blue-500 to-indigo-600 transform hover:-translate-y-1 hover:shadow-lg transition-all duration-200 text-sm sm:text-base"
             >
               {hasActiveSubscription && isCanceled
                 ? "プランを更新・再開する"
                 : "サブスクリプションを開始する"}
             </Button>
-            <p className="mt-4 text-sm text-gray-500">
+            <p className="mt-3 sm:mt-4 text-xs sm:text-sm text-gray-500">
               * サブスクリプションはいつでもキャンセルできます
             </p>
           </div>

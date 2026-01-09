@@ -160,12 +160,12 @@ const TwoFactorAuth: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-juice-orange-50 to-juice-yellow-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-juice-orange-50 to-juice-yellow-50 flex items-center justify-center py-6 sm:py-12 px-3 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-6 sm:space-y-8">
         <div className="text-center">
-          <div className="mx-auto h-16 w-16 bg-juice-orange-500 rounded-full flex items-center justify-center mb-4">
+          <div className="mx-auto h-12 w-12 sm:h-16 sm:w-16 bg-juice-orange-500 rounded-full flex items-center justify-center mb-3 sm:mb-4">
             <svg
-              className="h-8 w-8 text-white"
+              className="h-6 w-6 sm:h-8 sm:w-8 text-white"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -178,13 +178,13 @@ const TwoFactorAuth: React.FC = () => {
               />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
             Juice Academy
           </h1>
-          <p className="text-gray-600">
+          <p className="text-sm sm:text-base text-gray-600 px-2">
             セキュリティのため、二段階認証を完了してください
           </p>
-          <p className="text-sm text-gray-500 mt-2">
+          <p className="text-xs sm:text-sm text-gray-500 mt-2 break-all px-2">
             {email} にワンタイムパスコードを送信しました
           </p>
         </div>
@@ -216,11 +216,11 @@ const TwoFactorAuth: React.FC = () => {
         </Card>
 
         {/* セキュリティ情報 */}
-        <div className="mt-6 text-center">
-          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+        <div className="mt-4 sm:mt-6 text-center">
+          <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 border border-gray-200">
             <div className="flex items-center justify-center mb-2">
               <svg
-                className="w-5 h-5 text-green-500 mr-2"
+                className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mr-2"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -230,26 +230,23 @@ const TwoFactorAuth: React.FC = () => {
                   clipRule="evenodd"
                 />
               </svg>
-              <span className="text-sm font-medium text-gray-800">
+              <span className="text-xs sm:text-sm font-medium text-gray-800">
                 セキュア認証
               </span>
             </div>
-            <p className="text-xs text-gray-600">
-              あなたのアカウントは二段階認証で保護されています。
-              <br />
-              認証コードは暗号化されて送信され、5分間のみ有効です。
+            <p className="text-xs text-gray-600 leading-relaxed">
+              あなたのアカウントは二段階認証で保護されています。認証コードは暗号化されて送信され、5分間のみ有効です。
             </p>
           </div>
         </div>
 
         {/* ヘルプリンク */}
         <div className="text-center">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-500 leading-relaxed px-2">
             メールが届かない場合や問題がある場合は、
-            <br />
             <a
               href="mailto:support@juiceacademy.jp"
-              className="text-juice-orange-500 hover:text-juice-orange-600 font-medium"
+              className="text-juice-orange-500 hover:text-juice-orange-600 font-medium ml-1"
             >
               サポートチーム
             </a>

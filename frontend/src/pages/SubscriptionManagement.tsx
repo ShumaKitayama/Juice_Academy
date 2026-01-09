@@ -143,13 +143,13 @@ const SubscriptionManagement: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-6 sm:py-12 px-3 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto animate-fade-in">
-        <div className="text-center mb-12">
-          <h1 className="text-3xl font-extrabold text-gray-900 sm:text-4xl bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+        <div className="text-center mb-6 sm:mb-12">
+          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 px-2">
             サブスクリプション管理
           </h1>
-          <p className="mt-3 max-w-2xl mx-auto text-xl text-gray-500 sm:mt-4">
+          <p className="mt-2 sm:mt-4 max-w-2xl mx-auto text-sm sm:text-base md:text-xl text-gray-500 px-2">
             現在のサブスクリプション状況を確認できます
           </p>
         </div>
@@ -167,17 +167,17 @@ const SubscriptionManagement: React.FC = () => {
 
         {subscription ? (
           <Card className="divide-y divide-gray-200 animate-slide-up">
-            <div className="p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            <div className="p-4 sm:p-6">
+              <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">
                 サブスクリプション情報
               </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <p className="text-sm font-medium text-gray-500">
+                  <p className="text-xs sm:text-sm font-medium text-gray-500">
                     ステータス
                   </p>
-                  <p className="mt-1 text-lg font-semibold text-gray-900">
+                  <p className="mt-1 text-sm sm:text-base md:text-lg font-semibold text-gray-900">
                     {getStatusText(
                       subscription.status,
                       subscription.cancel_at_period_end
@@ -186,10 +186,10 @@ const SubscriptionManagement: React.FC = () => {
                 </div>
 
                 <div>
-                  <p className="text-sm font-medium text-gray-500">
+                  <p className="text-xs sm:text-sm font-medium text-gray-500">
                     次回請求日
                   </p>
-                  <p className="mt-1 text-lg font-semibold text-gray-900">
+                  <p className="mt-1 text-sm sm:text-base md:text-lg font-semibold text-gray-900">
                     {formatNextBillingDate(subscription.current_period_end)}
                   </p>
                 </div>
@@ -197,47 +197,47 @@ const SubscriptionManagement: React.FC = () => {
 
               {subscription.status === "active" &&
                 !subscription.cancel_at_period_end && (
-                  <div className="mt-8">
+                  <div className="mt-6 sm:mt-8">
                     <Button
                       onClick={handleCancelSubscription}
                       variant="danger"
                       size="medium"
                       isLoading={cancelLoading}
-                      className="btn-hover-effect"
+                      className="btn-hover-effect w-full sm:w-auto text-sm"
                     >
                       サブスクリプションをキャンセル
                     </Button>
-                    <p className="mt-2 text-sm text-gray-500">
+                    <p className="mt-2 text-xs sm:text-sm text-gray-500">
                       * キャンセルしても次回更新日まではサービスを利用できます
                     </p>
                   </div>
                 )}
             </div>
 
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <div className="p-4 sm:p-6">
+              <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
                 決済履歴
               </h3>
               <Button
                 onClick={() => navigate("/payment/history")}
                 variant="outline"
                 size="small"
-                className="btn-hover-effect"
+                className="btn-hover-effect w-full sm:w-auto text-sm"
               >
                 決済履歴を表示
               </Button>
             </div>
           </Card>
         ) : (
-          <div className="text-center p-8 bg-white rounded-lg shadow animate-slide-up">
-            <p className="text-lg text-gray-600 mb-6">
+          <div className="text-center p-4 sm:p-8 bg-white rounded-lg shadow animate-slide-up">
+            <p className="text-sm sm:text-base md:text-lg text-gray-600 mb-4 sm:mb-6">
               現在アクティブなサブスクリプションはありません
             </p>
             <Button
               onClick={() => navigate("/subscription")}
               variant="primary"
               size="medium"
-              className="btn-hover-effect bg-gradient-to-r from-blue-500 to-indigo-600"
+              className="btn-hover-effect bg-gradient-to-r from-blue-500 to-indigo-600 w-full sm:w-auto text-sm"
             >
               サブスクリプションを開始する
             </Button>

@@ -203,27 +203,27 @@ const PaymentMethod: React.FC = () => {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold text-gray-800 mb-6">
+      <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4 sm:mb-6">
         支払い方法管理
       </h2>
 
-      {error && <ErrorAlert message={error} className="mb-4" />}
-      {success && <SuccessAlert message={success} className="mb-4" />}
+      {error && <ErrorAlert message={error} className="mb-3 sm:mb-4" />}
+      {success && <SuccessAlert message={success} className="mb-3 sm:mb-4" />}
 
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {paymentMethods.length > 0 ? (
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
             <ul className="divide-y divide-gray-200">
               {paymentMethods.map((method) => (
-                <li key={method.id} className="p-4">
-                  <div className="flex items-center justify-between">
+                <li key={method.id} className="p-3 sm:p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
                     <div className="flex items-center">
                       {method.card.brand && (
-                        <div className="mr-3">
+                        <div className="mr-2 sm:mr-3 flex-shrink-0">
                           {getCardBrandLogo(method.card.brand)}
                         </div>
                       )}
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-sm font-medium text-gray-900">
                           {formatCardNumber(method.card.last4)}
                         </p>
@@ -236,9 +236,9 @@ const PaymentMethod: React.FC = () => {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center">
+                    <div className="flex items-center justify-end sm:justify-start gap-2 sm:gap-3">
                       {method.isDefault && (
-                        <span className="mr-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                           デフォルト
                         </span>
                       )}
@@ -256,9 +256,9 @@ const PaymentMethod: React.FC = () => {
             </ul>
           </div>
         ) : (
-          <div className="bg-white p-6 rounded-lg border border-gray-200 text-center">
+          <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200 text-center">
             <svg
-              className="mx-auto h-12 w-12 text-gray-400"
+              className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-gray-400"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -270,31 +270,32 @@ const PaymentMethod: React.FC = () => {
                 d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
               />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">
+            <h3 className="mt-2 text-xs sm:text-sm font-medium text-gray-900">
               支払い方法が登録されていません
             </h3>
-            <p className="mt-1 text-sm text-gray-500">
-              サービスを利用するには、クレジットカード情報の登録が必要です。
+            <p className="mt-1 text-xs sm:text-sm text-gray-500">
+              サービスを利用するには、カード情報の登録が必要です。
             </p>
           </div>
         )}
 
-        <div className="flex justify-end">
+        <div className="flex justify-center sm:justify-end">
           <Button
             variant="primary"
             size="medium"
             onClick={handleAddPaymentMethod}
             disabled={loading || paymentMethods.length > 0}
+            className="w-full sm:w-auto text-sm"
           >
             新しい支払い方法を追加
           </Button>
         </div>
 
-        <div className="bg-juice-orange-50 p-4 rounded-lg border border-juice-orange-100">
+        <div className="bg-juice-orange-50 p-3 sm:p-4 rounded-lg border border-juice-orange-100">
           <div className="flex">
             <div className="flex-shrink-0">
               <svg
-                className="h-5 w-5 text-juice-orange-400"
+                className="h-4 w-4 sm:h-5 sm:w-5 text-juice-orange-400"
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 20 20"
                 fill="currentColor"
@@ -306,18 +307,16 @@ const PaymentMethod: React.FC = () => {
                 />
               </svg>
             </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-juice-orange-800">
+            <div className="ml-2 sm:ml-3 min-w-0">
+              <h3 className="text-xs sm:text-sm font-medium text-juice-orange-800">
                 支払い方法について
               </h3>
-              <div className="mt-2 text-sm text-juice-orange-700">
-                <p>
-                  登録されたクレジットカードは、サブスクリプションの自動更新に使用されます。
-                  カード情報はStripeの安全な環境で管理され、当サイトのサーバーには保存されません。
+              <div className="mt-1 sm:mt-2 text-xs sm:text-sm text-juice-orange-700">
+                <p className="leading-relaxed">
+                  登録されたクレジットカードは、サブスクリプションの自動更新に使用されます。カード情報はStripeの安全な環境で管理され、当サイトのサーバーには保存されません。
                   {paymentMethods.length > 0 && (
                     <span className="block mt-2 font-medium">
-                      ※
-                      現在、カードが登録済みのため新しいカードの追加はできません。
+                      ※ 現在、カードが登録済みのため新しいカードの追加はできません。
                     </span>
                   )}
                 </p>
