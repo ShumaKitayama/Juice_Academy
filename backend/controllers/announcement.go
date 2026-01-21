@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -34,7 +33,7 @@ func InitAnnouncementCollection(db *mongo.Database) {
 
 // GetAnnouncementsHandler はお知らせ一覧を取得するハンドラ
 func GetAnnouncementsHandler(c *gin.Context) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 
 	// 最新のお知らせから順に取得するためのオプション
 	findOptions := options.Find()
@@ -97,7 +96,7 @@ func CreateAnnouncementHandler(c *gin.Context) {
 	announcement.UpdatedAt = now
 
 	// データベースに保存
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	result, err := announcementCollection.InsertOne(ctx, announcement)
 	if err != nil {
 		// セキュリティ: 本番環境ではエラーの詳細をログに出力しない
@@ -135,7 +134,7 @@ func UpdateAnnouncementHandler(c *gin.Context) {
 	updateData["updated_at"] = time.Now()
 
 	// データベースを更新
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	result, err := announcementCollection.UpdateOne(
 		ctx,
 		bson.M{"_id": id},
@@ -174,7 +173,7 @@ func DeleteAnnouncementHandler(c *gin.Context) {
 	}
 
 	// データベースから削除
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	result, err := announcementCollection.DeleteOne(ctx, bson.M{"_id": id})
 
 	if err != nil {
@@ -230,7 +229,7 @@ func GetAnnouncementByIdHandler(c *gin.Context) {
 	}
 
 	var announcement Announcement
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	err = announcementCollection.FindOne(ctx, bson.M{"_id": id}).Decode(&announcement)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {

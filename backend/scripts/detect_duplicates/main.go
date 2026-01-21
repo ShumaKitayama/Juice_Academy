@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
-	"github.com/stripe/stripe-go/v72"
-	"github.com/stripe/stripe-go/v72/customer"
-	"github.com/stripe/stripe-go/v72/paymentmethod"
-	subscriptionapi "github.com/stripe/stripe-go/v72/sub"
+	"github.com/stripe/stripe-go/v81"
+	"github.com/stripe/stripe-go/v81/customer"
+	"github.com/stripe/stripe-go/v81/paymentmethod"
+	subscriptionapi "github.com/stripe/stripe-go/v81/subscription"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -185,7 +185,7 @@ func main() {
 
 			// サブスクリプションの有無を確認
 			subList := subscriptionapi.List(&stripe.SubscriptionListParams{
-				Customer: c.ID,
+				Customer: stripe.String(c.ID),
 			})
 			subCount := 0
 			activeSubCount := 0

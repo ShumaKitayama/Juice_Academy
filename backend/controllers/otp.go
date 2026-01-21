@@ -96,7 +96,7 @@ func SendOTPHandler(c *gin.Context) {
 
 	// ユーザーの存在確認
 	var user User
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	err := userCollection.FindOne(ctx, bson.M{"email": req.Email}).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -178,7 +178,7 @@ func VerifyOTPHandler(c *gin.Context) {
 
 	// ユーザーの存在確認
 	var user User
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	err := userCollection.FindOne(ctx, bson.M{"email": req.Email}).Decode(&user)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "認証に失敗しました"})
@@ -311,7 +311,7 @@ func ResendOTPHandler(c *gin.Context) {
 	}
 
 	// レート制限チェック（1分以内の再送信を防ぐ）
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var lastOTP OTP
 	err := otpCollection.FindOne(ctx, bson.M{
 		"email":      req.Email,

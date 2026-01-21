@@ -44,6 +44,10 @@ func main() {
 	controllers.InitRefreshTokenCollection(dbClient)
 	middleware.InitUserCollection(db)
 
+	// Webhook Worker Pool の初期化
+	subCollection := db.Collection("subscriptions")
+	services.InitWebhookWorker(services.DefaultWebhookConfig, subCollection)
+
 	// 管理者ユーザーの作成（環境変数で制御）
 	if os.Getenv("SEED_ADMIN_USER") == "true" {
 		controllers.SeedAdminUser()

@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"context"
 	"juice_academy_backend/services"
 	"net/http"
 	"regexp"
@@ -96,7 +95,7 @@ func RegisterHandler(c *gin.Context) {
 	}
 
 	// メールアドレスとstudent_idの重複チェック
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	existingUser := userCollection.FindOne(ctx, bson.M{
 		"$or": []bson.M{
 			{"email": req.Email},
@@ -153,7 +152,7 @@ func LoginHandler(c *gin.Context) {
 	}
 
 	var user User
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	err := userCollection.FindOne(ctx, bson.M{"email": req.Email}).Decode(&user)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "メールアドレスまたはパスワードが正しくありません"})
@@ -194,7 +193,7 @@ func LogoutHandler(c *gin.Context) {
 	}
 
 	if refreshToken, err := c.Cookie("refresh_token"); err == nil && refreshToken != "" {
-		ctx := context.Background()
+		ctx := c.Request.Context()
 		_ = revokeRefreshToken(ctx, refreshToken)
 	}
 	clearRefreshCookie(c)
@@ -216,7 +215,7 @@ func RefreshTokenHandler(c *gin.Context) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	existing, err := findActiveRefreshToken(ctx, refreshToken)
 	if err != nil {
 		clearRefreshCookie(c)

@@ -18,6 +18,10 @@ var (
 	stripeSubscriptionRegex  = regexp.MustCompile(`sub_[a-zA-Z0-9]+`)
 	stripePaymentIntentRegex = regexp.MustCompile(`pi_[a-zA-Z0-9]+`)
 	stripeSetupIntentRegex   = regexp.MustCompile(`seti_[a-zA-Z0-9]+`)
+	stripeInvoiceRegex       = regexp.MustCompile(`in_[a-zA-Z0-9]+`)
+	stripeChargeRegex        = regexp.MustCompile(`ch_[a-zA-Z0-9]+`)
+	stripeDisputeRegex       = regexp.MustCompile(`dp_[a-zA-Z0-9]+`)
+	stripeEventRegex         = regexp.MustCompile(`evt_[a-zA-Z0-9]+`)
 )
 
 type contextKey string
@@ -124,6 +128,26 @@ func MaskPII(text string) string {
 
 	// Stripe Setup Intent IDのマスキング
 	text = stripeSetupIntentRegex.ReplaceAllStringFunc(text, func(match string) string {
+		return MaskStripeID(match)
+	})
+
+	// Stripe Invoice IDのマスキング
+	text = stripeInvoiceRegex.ReplaceAllStringFunc(text, func(match string) string {
+		return MaskStripeID(match)
+	})
+
+	// Stripe Charge IDのマスキング
+	text = stripeChargeRegex.ReplaceAllStringFunc(text, func(match string) string {
+		return MaskStripeID(match)
+	})
+
+	// Stripe Dispute IDのマスキング
+	text = stripeDisputeRegex.ReplaceAllStringFunc(text, func(match string) string {
+		return MaskStripeID(match)
+	})
+
+	// Stripe Event IDのマスキング
+	text = stripeEventRegex.ReplaceAllStringFunc(text, func(match string) string {
 		return MaskStripeID(match)
 	})
 

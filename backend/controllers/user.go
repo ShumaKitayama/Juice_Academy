@@ -1,14 +1,13 @@
 package controllers
 
 import (
-	"context"
 	"juice_academy_backend/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/stripe/stripe-go/v72"
-	"github.com/stripe/stripe-go/v72/customer"
-	subscriptionapi "github.com/stripe/stripe-go/v72/sub"
+	"github.com/stripe/stripe-go/v81"
+	"github.com/stripe/stripe-go/v81/customer"
+	subscriptionapi "github.com/stripe/stripe-go/v81/subscription"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -30,7 +29,7 @@ func DeleteAccountHandler(c *gin.Context) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 
 	// === STEP 1: Stripe 側のクリーンアップ ===
 	// 詳細: backend/ACCOUNT_DELETION.md 参照
@@ -120,9 +119,9 @@ func SetAdminStatus(c *gin.Context) {
 	}
 
 	// データベースからユーザーを取得して更新
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	filter := bson.M{"_id": objID}
-	update := bson.M{"$set": bson.M{"isAdmin": requestBody.IsAdmin}}
+	update := bson.M{"$set": bson.M{"is_admin": requestBody.IsAdmin}}
 
 	result, err := userCollection.UpdateOne(ctx, filter, update)
 	if err != nil {

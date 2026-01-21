@@ -3,22 +3,32 @@ package middleware
 import (
 	"fmt"
 	"juice_academy_backend/services"
+	"log"
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/gin-gonic/gin"
 	jwt "github.com/golang-jwt/jwt/v5"
 )
 
-var jwtSecret []byte
+var (
+	jwtSecret     []byte
+	jwtSecretOnce sync.Once
+)
 
-func init() {
-	secret := os.Getenv("JWT_SECRET")
-	if secret == "" {
-		panic("JWT_SECRET environment variable is required")
-	}
-	jwtSecret = []byte(secret)
+// getJWTSecret は JWT シークレットを遅延初期化で取得する
+// sync.Once パターンにより、テスト時の panic を防ぎ、必要な時に初期化される
+func getJWTSecret() []byte {
+	jwtSecretOnce.Do(func() {
+		secret := os.Getenv("JWT_SECRET")
+		if secret == "" {
+			log.Fatal("JWT_SECRET environment variable is required")
+		}
+		jwtSecret = []byte(secret)
+	})
+	return jwtSecret
 }
 
 // JWTAuthMiddleware は JWT トークンの検証を行うミドルウェア。
@@ -39,7 +49,7 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 			}
-			return jwtSecret, nil
+			return getJWTSecret(), nil
 		})
 
 		if err != nil {

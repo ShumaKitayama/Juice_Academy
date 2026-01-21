@@ -195,7 +195,7 @@ func issueTokens(c *gin.Context, user User) (accessToken string, csrfToken strin
 		return "", "", 0, err
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	userAgent := c.Request.UserAgent()
 	ip := c.ClientIP()
 

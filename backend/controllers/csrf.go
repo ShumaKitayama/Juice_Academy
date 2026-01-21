@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -28,7 +27,7 @@ func CSRFProtection() gin.HandlerFunc {
 			return
 		}
 
-		ctx := context.Background()
+		ctx := c.Request.Context()
 		doc, err := findActiveRefreshToken(ctx, refreshToken)
 		if err != nil {
 			clearRefreshCookie(c)

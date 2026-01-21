@@ -9,7 +9,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/joho/godotenv v1.5.1
 	github.com/stretchr/testify v1.8.4
-	github.com/stripe/stripe-go/v72 v72.122.0
+	github.com/stripe/stripe-go/v81 v81.1.1
 	go.mongodb.org/mongo-driver v1.11.2
 )
 
