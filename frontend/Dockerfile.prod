@@ -9,6 +9,20 @@ COPY package*.json ./
 # 依存関係をインストール
 RUN npm ci --silent
 
+# 環境変数をビルド引数として受け取る
+ARG VITE_STRIPE_PRICE_ID_MONTHLY
+ARG VITE_STRIPE_PRICE_ID_YEARLY
+ARG VITE_STRIPE_PRICE_ID_2YEARS
+ARG VITE_STRIPE_PUBLISHABLE_KEY
+ARG VITE_API_URL
+
+# ビルド時に使用する環境変数を設定
+ENV VITE_STRIPE_PRICE_ID_MONTHLY=$VITE_STRIPE_PRICE_ID_MONTHLY
+ENV VITE_STRIPE_PRICE_ID_YEARLY=$VITE_STRIPE_PRICE_ID_YEARLY
+ENV VITE_STRIPE_PRICE_ID_2YEARS=$VITE_STRIPE_PRICE_ID_2YEARS
+ENV VITE_STRIPE_PUBLISHABLE_KEY=$VITE_STRIPE_PUBLISHABLE_KEY
+ENV VITE_API_URL=$VITE_API_URL
+
 # ソースコードをコピー
 COPY . .
 
@@ -40,4 +54,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
 
 # serveで静的ファイルを配信
-CMD ["serve", "-s", "dist", "-l", "3000", "-c", "0"]
+CMD ["serve", "-s", "dist", "-l", "3000"]

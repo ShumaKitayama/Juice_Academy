@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Button from "../components/Button";
 import Card from "../components/Card";
 import ErrorAlert from "../components/ErrorAlert";
@@ -70,34 +71,52 @@ const subscriptionPlans = [
 ];
 
 const Subscription: React.FC = () => {
+  const navigate = useNavigate();
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] =
     useState<SubscriptionStatus | null>(null);
+  const [hasPaymentMethod, setHasPaymentMethod] = useState(false);
 
   const { user } = useAuth();
 
-  // サブスクリプション状態を確認
-  React.useEffect(() => {
-    const checkSubscriptionStatus = async () => {
+  // サブスクリプション状態と支払い方法を確認
+  useEffect(() => {
+    const checkStatus = async () => {
+      if (!user) {
+        setCheckingStatus(false);
+        return;
+      }
+
       try {
-        const response = await paymentAPI.getSubscriptionStatus();
-        setSubscriptionStatus(response.data);
-      } catch {
-        // エラー時はサブスクリプションなしとして扱う
-        setSubscriptionStatus({
-          hasActiveSubscription: false,
-          subscription: undefined,
-        });
+        // 並行して取得
+        const [subResponse, pmResponse] = await Promise.all([
+          paymentAPI.getSubscriptionStatus().catch(() => ({
+            data: {
+              hasActiveSubscription: false,
+              subscription: undefined,
+            },
+          })),
+          paymentAPI.getPaymentMethods().catch(() => ({
+            data: { paymentMethods: [] },
+          })),
+        ]);
+
+        setSubscriptionStatus(subResponse.data);
+        
+        const methods = pmResponse.data?.paymentMethods;
+        setHasPaymentMethod(Array.isArray(methods) && methods.length > 0);
+      } catch (err) {
+        console.error("Failed to fetch initial data", err);
       } finally {
         setCheckingStatus(false);
       }
     };
 
-    checkSubscriptionStatus();
-  }, []);
+    checkStatus();
+  }, [user]);
 
   // 選択されたプランの情報を取得
   const getSelectedPlanInfo = () => {
@@ -129,6 +148,12 @@ const Subscription: React.FC = () => {
   // サブスクリプション登録ハンドラ
   const handleSubscribe = async () => {
     if (!selectedPlan || !user) return;
+
+    // 支払い方法がない場合は登録ページへ誘導
+    if (!hasPaymentMethod && !hasActiveSubscription) {
+      navigate("/payment-setup");
+      return;
+    }
 
     if (hasActiveSubscription && isCanceled) {
       const isReactivation = selectedPlan === activePriceId;
@@ -436,6 +461,8 @@ const Subscription: React.FC = () => {
             >
               {hasActiveSubscription && isCanceled
                 ? "プランを更新・再開する"
+                : !hasPaymentMethod
+                ? "支払い方法を登録して次へ"
                 : "サブスクリプションを開始する"}
             </Button>
             <p className="mt-3 sm:mt-4 text-xs sm:text-sm text-gray-500">

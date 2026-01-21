@@ -3,12 +3,13 @@ import { defineConfig } from "vite";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: "./",
+  base: "/",
   plugins: [react()],
   publicDir: "public",
   server: {
     host: '0.0.0.0',
     port: 3000,
+    allowedHosts: ['juiceacademydemo.win'],
   },
   build: {
     // distフォルダに出力
@@ -21,9 +22,9 @@ export default defineConfig({
       input: {
         "": "index.html",
       },
-      // bundle.jsを差し替えする
+      // bundle.jsにハッシュを追加してキャッシュ無効化
       output: {
-        entryFileNames: "assets/bundle.js",
+        entryFileNames: "assets/bundle-[hash].js",
       },
     },
   },
