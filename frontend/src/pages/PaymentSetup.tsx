@@ -62,14 +62,14 @@ const PaymentSetup: React.FC = () => {
         // 既に顧客情報が存在する場合はエラーにしない
         if (
           apiError.response?.data?.message?.includes(
-            "既に支払い情報が登録されています"
+            "既に支払い情報が登録されています",
           )
         ) {
           setHasStripeCustomer(true);
         } else {
           setError(
             apiError.response?.data?.error ||
-              "Stripe顧客情報の作成に失敗しました"
+              "Stripe顧客情報の作成に失敗しました",
           );
         }
       } finally {
@@ -101,7 +101,7 @@ const PaymentSetup: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-6 sm:py-12 px-3 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-2 sm:py-4 px-2 sm:px-4 lg:px-6">
       <div className="max-w-lg mx-auto animate-fade-in">
         <div className="text-center mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 px-2">
@@ -164,7 +164,8 @@ const PaymentSetup: React.FC = () => {
             </div>
             <div>
               <p className="text-gray-600 text-xs sm:text-sm leading-relaxed">
-                当サイトでは、クレジットカード情報を直接保存せず、Stripeの安全な決済システムを利用しています。カード情報はStripeのセキュアな環境で管理され、PCI DSSに準拠した高度なセキュリティ対策が施されています。
+                当サイトでは、クレジットカード情報を直接保存せず、Stripeの安全な決済システムを利用しています。カード情報はStripeのセキュアな環境で管理され、PCI
+                DSSに準拠した高度なセキュリティ対策が施されています。
               </p>
             </div>
           </div>

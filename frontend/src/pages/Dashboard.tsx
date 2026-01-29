@@ -17,7 +17,7 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(
-    sessionStorage.getItem("isLoading") === "true"
+    sessionStorage.getItem("isLoading") === "true",
   );
   const [hasActiveSubscription, setHasActiveSubscription] =
     useState<boolean>(false);
@@ -92,7 +92,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+      <div className="max-w-6xl mx-auto px-2 sm:px-4 lg:px-6 py-2 sm:py-4">
         {/* ヘッダーセクション */}
         <div className="mb-4 sm:mb-8">
           <div className="text-center mb-4 sm:mb-8">
@@ -103,7 +103,8 @@ const Dashboard: React.FC = () => {
               </span>
             </h1>
             <p className="text-sm sm:text-base md:text-lg text-gray-600 max-w-2xl mx-auto px-2">
-              Juice Academyのドリンクバーサービスへようこそ。美味しいドリンクをお楽しみください。
+              Juice
+              Academyのドリンクバーサービスへようこそ。美味しいドリンクをお楽しみください。
             </p>
           </div>
         </div>
@@ -111,7 +112,9 @@ const Dashboard: React.FC = () => {
         {/* お知らせセクション - 最上部に配置 */}
         <div className="mb-6 sm:mb-12">
           <div className="flex items-center justify-between mb-4 sm:mb-6">
-            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">最新のお知らせ</h2>
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">
+              最新のお知らせ
+            </h2>
             <Link
               to="/announcements"
               className="text-orange-600 hover:text-orange-700 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap"
@@ -310,7 +313,10 @@ const Dashboard: React.FC = () => {
             </span>
           </Card>
 
-          <Card variant="simple" className="text-center py-4 sm:py-8 sm:col-span-2 lg:col-span-1">
+          <Card
+            variant="simple"
+            className="text-center py-4 sm:py-8 sm:col-span-2 lg:col-span-1"
+          >
             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
               <svg
                 className="w-5 h-5 sm:w-6 sm:h-6 text-gray-500"

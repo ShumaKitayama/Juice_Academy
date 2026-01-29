@@ -41,19 +41,19 @@ const Card: React.FC<CardProps> = ({
     }
   };
 
-  // パディングスタイル
+  // パディングスタイル（レスポンシブ対応）
   const getPaddingStyles = () => {
     switch (padding) {
       case "none":
         return "";
       case "small":
-        return "p-4";
+        return "p-3 sm:p-4"; // スマホ: 12px, PC: 16px
       case "medium":
-        return "p-6";
+        return "p-4 sm:p-6"; // スマホ: 16px, PC: 24px
       case "large":
-        return "p-8";
+        return "p-4 sm:p-6 lg:p-8"; // スマホ: 16px, タブレット: 24px, PC: 32px
       default:
-        return "p-6";
+        return "p-4 sm:p-6";
     }
   };
 
@@ -73,14 +73,16 @@ const Card: React.FC<CardProps> = ({
   return (
     <div className={cardClasses} style={style}>
       {(title || subtitle) && (
-        <div className={`${title && subtitle ? "mb-6" : "mb-4"}`}>
+        <div className={`${title && subtitle ? "mb-4" : "mb-3"}`}>
           {title && (
-            <h3 className="text-xl font-bold text-gray-800 mb-2 leading-tight">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-1 sm:mb-2 leading-tight">
               {title}
             </h3>
           )}
           {subtitle && (
-            <p className="text-gray-600 leading-relaxed">{subtitle}</p>
+            <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
+              {subtitle}
+            </p>
           )}
         </div>
       )}

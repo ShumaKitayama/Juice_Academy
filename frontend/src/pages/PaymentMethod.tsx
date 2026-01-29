@@ -48,7 +48,7 @@ const PaymentMethod: React.FC = () => {
       } catch (err: unknown) {
         const apiError = err as ApiError;
         setError(
-          apiError.response?.data?.error || "支払い方法の取得に失敗しました"
+          apiError.response?.data?.error || "支払い方法の取得に失敗しました",
         );
       } finally {
         setLoading(false);
@@ -68,7 +68,7 @@ const PaymentMethod: React.FC = () => {
 
       // 支払い方法リストを更新
       const updatedMethods = paymentMethods.filter(
-        (method) => method.id !== paymentMethodId
+        (method) => method.id !== paymentMethodId,
       );
       setPaymentMethods(updatedMethods);
 
@@ -81,7 +81,7 @@ const PaymentMethod: React.FC = () => {
     } catch (err: unknown) {
       const apiError = err as ApiError;
       setError(
-        apiError.response?.data?.error || "支払い方法の削除に失敗しました"
+        apiError.response?.data?.error || "支払い方法の削除に失敗しました",
       );
     } finally {
       setLoading(false);
@@ -202,13 +202,13 @@ const PaymentMethod: React.FC = () => {
   }
 
   return (
-    <div>
-      <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4 sm:mb-6">
-        支払い方法管理
+    <div className="text-left">
+      <h2 className="text-base sm:text-lg font-bold text-gray-800 mb-3">
+        支払い方法
       </h2>
 
-      {error && <ErrorAlert message={error} className="mb-3 sm:mb-4" />}
-      {success && <SuccessAlert message={success} className="mb-3 sm:mb-4" />}
+      {error && <ErrorAlert message={error} className="mb-3" />}
+      {success && <SuccessAlert message={success} className="mb-3" />}
 
       <div className="space-y-4 sm:space-y-6">
         {paymentMethods.length > 0 ? (
@@ -231,7 +231,7 @@ const PaymentMethod: React.FC = () => {
                           有効期限:{" "}
                           {formatExpiry(
                             method.card.exp_month,
-                            method.card.exp_year
+                            method.card.exp_year,
                           )}
                         </p>
                       </div>
@@ -316,7 +316,8 @@ const PaymentMethod: React.FC = () => {
                   登録されたクレジットカードは、サブスクリプションの自動更新に使用されます。カード情報はStripeの安全な環境で管理され、当サイトのサーバーには保存されません。
                   {paymentMethods.length > 0 && (
                     <span className="block mt-2 font-medium">
-                      ※ 現在、カードが登録済みのため新しいカードの追加はできません。
+                      ※
+                      現在、カードが登録済みのため新しいカードの追加はできません。
                     </span>
                   )}
                 </p>

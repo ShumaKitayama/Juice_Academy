@@ -105,7 +105,7 @@ const Subscription: React.FC = () => {
         ]);
 
         setSubscriptionStatus(subResponse.data);
-        
+
         const methods = pmResponse.data?.paymentMethods;
         setHasPaymentMethod(Array.isArray(methods) && methods.length > 0);
       } catch (err) {
@@ -159,10 +159,10 @@ const Subscription: React.FC = () => {
       const isReactivation = selectedPlan === activePriceId;
       const confirmMessage = isReactivation
         ? `現在の契約期間（${formatDate(
-            currentPeriodEnd
+            currentPeriodEnd,
           )}まで）が残っていますが、契約を再開しますか？`
         : `現在の契約期間（${formatDate(
-            currentPeriodEnd
+            currentPeriodEnd,
           )}まで）が残っていますが、プランを変更しますか？`;
 
       if (!window.confirm(confirmMessage)) {
@@ -181,7 +181,7 @@ const Subscription: React.FC = () => {
 
       // サブスクリプションを作成（既存のカード情報を使用）
       const response = await paymentAPI.createSubscription(
-        selectedPlanInfo.priceId
+        selectedPlanInfo.priceId,
       );
 
       // レスポンスに含まれるリダイレクト先に移動
@@ -195,7 +195,7 @@ const Subscription: React.FC = () => {
       const apiError = err as ApiError;
       setError(
         apiError.response?.data?.error ||
-          "サブスクリプションの登録に失敗しました"
+          "サブスクリプションの登録に失敗しました",
       );
       setLoading(false);
     }
@@ -231,30 +231,31 @@ const Subscription: React.FC = () => {
   const hasActiveSubscription = subscriptionStatus?.hasActiveSubscription;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-6 px-3 sm:py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-2 sm:py-4 px-2 sm:px-4 lg:px-6">
       <div className="max-w-6xl mx-auto animate-fade-in">
-        <div className="text-center mb-6 sm:mb-12">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 px-2">
-            サブスクリプションプラン
+        <div className="text-center mb-6 sm:mb-12 px-4">
+          <h1 className="text-xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+            プラン選択
           </h1>
-          <p className="mt-2 sm:mt-4 max-w-2xl mx-auto text-base sm:text-xl text-gray-500 px-2">
+          <p className="mt-2 sm:mt-4 max-w-2xl mx-auto text-sm sm:text-xl text-gray-500">
             {hasActiveSubscription
-              ? "現在登録中のプランを確認できます"
-              : "あなたに最適なプランを選択してください"}
+              ? "登録中のプランを確認"
+              : "最適なプランを選択"}
           </p>
         </div>
 
         {hasActiveSubscription && (
           <Card
-            className={`mb-8 border-2 ${
+            className={`mb-6 sm:mb-8 border-2 ${
               isCanceled
                 ? "bg-yellow-50 border-yellow-200"
                 : "bg-green-50 border-green-200"
             }`}
+            padding="small"
           >
-            <div className="flex items-center justify-center mb-4">
+            <div className="flex flex-col items-center text-center">
               <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center mr-4 ${
+                className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 ${
                   isCanceled ? "bg-yellow-100" : "bg-green-100"
                 }`}
               >
@@ -283,26 +284,22 @@ const Subscription: React.FC = () => {
                   )}
                 </svg>
               </div>
-              <div>
-                <h3
-                  className={`text-lg font-semibold ${
-                    isCanceled ? "text-yellow-900" : "text-green-900"
-                  }`}
-                >
-                  {isCanceled ? "解約予約済み" : "サブスクリプション登録済み"}
-                </h3>
-                <p
-                  className={`text-sm ${
-                    isCanceled ? "text-yellow-700" : "text-green-700"
-                  }`}
-                >
-                  {isCanceled
-                    ? `現在の契約は ${formatDate(
-                        currentPeriodEnd
-                      )} に終了します。再契約またはプラン変更が可能です。`
-                    : "現在、以下のプランをご利用中です"}
-                </p>
-              </div>
+              <h3
+                className={`text-lg font-semibold ${
+                  isCanceled ? "text-yellow-900" : "text-green-900"
+                }`}
+              >
+                {isCanceled ? "解約予約済み" : "登録済み"}
+              </h3>
+              <p
+                className={`text-sm mt-1 ${
+                  isCanceled ? "text-yellow-700" : "text-green-700"
+                }`}
+              >
+                {isCanceled
+                  ? `${formatDate(currentPeriodEnd)} に終了`
+                  : "以下のプランをご利用中"}
+              </p>
             </div>
           </Card>
         )}
@@ -440,8 +437,8 @@ const Subscription: React.FC = () => {
                 selectedPlanInfo.interval === "月"
                   ? "月額"
                   : selectedPlanInfo.interval === "年"
-                  ? "年額"
-                  : "2年一括"
+                    ? "年額"
+                    : "2年一括"
               }
               nextBillingDate={getNextBillingDate(selectedPlanInfo.interval)}
               tax={10}
@@ -462,8 +459,8 @@ const Subscription: React.FC = () => {
               {hasActiveSubscription && isCanceled
                 ? "プランを更新・再開する"
                 : !hasPaymentMethod
-                ? "支払い方法を登録して次へ"
-                : "サブスクリプションを開始する"}
+                  ? "支払い方法を登録して次へ"
+                  : "サブスクリプションを開始する"}
             </Button>
             <p className="mt-3 sm:mt-4 text-xs sm:text-sm text-gray-500">
               * サブスクリプションはいつでもキャンセルできます

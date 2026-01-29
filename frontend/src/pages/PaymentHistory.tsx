@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import Card from "../components/Card";
 import ErrorAlert from "../components/ErrorAlert";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { useAuth } from "../hooks/useAuth";
@@ -31,7 +30,7 @@ const PaymentHistory: React.FC = () => {
         setError(null);
       } catch {
         setError(
-          "支払い履歴の取得中にエラーが発生しました。後でもう一度お試しください。"
+          "支払い履歴の取得中にエラーが発生しました。後でもう一度お試しください。",
         );
       } finally {
         setLoading(false);
@@ -105,70 +104,73 @@ const PaymentHistory: React.FC = () => {
 
     return (
       <>
-        {/* モバイル用カード表示 */}
-        <div className="block sm:hidden space-y-3">
+        {/* モバイル用リスト表示 */}
+        <div className="block sm:hidden divide-y divide-gray-100">
           {payments.map((payment) => (
             <div
               key={payment.id}
-              className={`p-4 rounded-lg border ${
-                payment.status === "upcoming"
-                  ? "bg-blue-50 border-blue-200"
-                  : "bg-white border-gray-200"
+              className={`py-3 flex items-center justify-between ${
+                payment.status === "upcoming" ? "bg-blue-50 -mx-3 px-3" : ""
               }`}
             >
-              <div className="flex justify-between items-start mb-2">
-                <span className="text-xs text-gray-500">
-                  {formatDate(payment.created_at)}
-                </span>
-                <span
-                  className={`px-2 py-0.5 text-xs font-semibold rounded-full ${getStatusStyle(
-                    payment.status
-                  )}`}
-                >
-                  {translateStatus(payment.status)}
-                </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                      payment.status === "success"
+                        ? "bg-green-500"
+                        : payment.status === "upcoming"
+                          ? "bg-blue-500"
+                          : payment.status === "pending"
+                            ? "bg-yellow-500"
+                            : "bg-red-500"
+                    }`}
+                  />
+                  <span className="text-sm text-gray-500">
+                    {formatDate(payment.created_at)}
+                  </span>
+                </div>
+                <p className="text-base text-gray-800 mt-0.5">
+                  {payment.description || "サブスクリプション"}
+                </p>
               </div>
-              <p className="text-sm font-medium text-gray-900 mb-1">
-                {payment.description ||
-                  (payment.type === "subscription"
-                    ? "サブスクリプション料金"
-                    : "支払い")}
-              </p>
-              <p className="text-lg font-bold text-gray-900">
-                {formatAmount(payment.amount)}
-              </p>
+              <div className="text-right pl-3">
+                <p className="text-base font-semibold text-gray-900">
+                  {formatAmount(payment.amount)}
+                </p>
+              </div>
             </div>
           ))}
         </div>
 
         {/* デスクトップ用テーブル表示 */}
-        <div className="hidden sm:block overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+        <div className="hidden sm:block">
+          <table className="w-full table-fixed divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th
                   scope="col"
-                  className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="w-28 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase"
                 >
                   日付
                 </th>
                 <th
                   scope="col"
-                  className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase"
                 >
                   説明
                 </th>
                 <th
                   scope="col"
-                  className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="w-24 px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase"
                 >
                   金額
                 </th>
                 <th
                   scope="col"
-                  className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="w-20 px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase"
                 >
-                  ステータス
+                  状態
                 </th>
               </tr>
             </thead>
@@ -178,22 +180,25 @@ const PaymentHistory: React.FC = () => {
                   key={payment.id}
                   className={payment.status === "upcoming" ? "bg-blue-50" : ""}
                 >
-                  <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-3 py-3 text-sm text-gray-500">
                     {formatDate(payment.created_at)}
                   </td>
-                  <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td
+                    className="px-3 py-3 text-sm text-gray-900 truncate"
+                    title={payment.description}
+                  >
                     {payment.description ||
                       (payment.type === "subscription"
                         ? "サブスクリプション料金"
                         : "支払い")}
                   </td>
-                  <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-3 py-3 text-sm text-gray-900 text-right font-medium">
                     {formatAmount(payment.amount)}
                   </td>
-                  <td className="px-4 md:px-6 py-4 whitespace-nowrap">
+                  <td className="px-3 py-3 text-center">
                     <span
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusStyle(
-                        payment.status
+                      className={`px-2 py-0.5 text-xs font-medium rounded ${getStatusStyle(
+                        payment.status,
                       )}`}
                     >
                       {translateStatus(payment.status)}
@@ -209,12 +214,11 @@ const PaymentHistory: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-4 sm:py-8">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-        <Card title="支払い履歴" subtitle="これまでの支払い記録と詳細">
-          {renderContent()}
-        </Card>
-      </div>
+    <div className="text-left">
+      <h2 className="text-base sm:text-lg font-bold text-gray-800 mb-3">
+        支払い履歴
+      </h2>
+      {renderContent()}
     </div>
   );
 };

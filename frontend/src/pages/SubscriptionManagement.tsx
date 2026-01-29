@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import Button from "../components/Button";
-import Card from "../components/Card";
+import { useLocation, useNavigate } from "react-router-dom";
 import ErrorAlert from "../components/ErrorAlert";
 import LoadingSpinner from "../components/LoadingSpinner";
 import SuccessAlert from "../components/SuccessAlert";
@@ -24,6 +22,10 @@ const SubscriptionManagement: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
 
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // MyPage内で表示されているかどうかを判定
+  const isInMyPage = location.pathname.startsWith("/mypage");
 
   // サブスクリプション情報を取得
   useEffect(() => {
@@ -38,7 +40,7 @@ const SubscriptionManagement: React.FC = () => {
           };
           setError(
             errorWithResponse.response?.data?.error ||
-              "サブスクリプション情報の取得に失敗しました"
+              "サブスクリプション情報の取得に失敗しました",
           );
         } else {
           setError("サブスクリプション情報の取得に失敗しました");
@@ -91,7 +93,7 @@ const SubscriptionManagement: React.FC = () => {
   const handleCancelSubscription = async () => {
     if (
       !window.confirm(
-        "サブスクリプションをキャンセルしますか？次回更新時に終了します。"
+        "サブスクリプションをキャンセルしますか？次回更新時に終了します。",
       )
     ) {
       return;
@@ -119,7 +121,7 @@ const SubscriptionManagement: React.FC = () => {
         };
         setError(
           errorWithResponse.response?.data?.error ||
-            "サブスクリプションのキャンセルに失敗しました"
+            "サブスクリプションのキャンセルに失敗しました",
         );
       } else {
         setError("サブスクリプションのキャンセルに失敗しました");
@@ -130,6 +132,19 @@ const SubscriptionManagement: React.FC = () => {
   };
 
   if (loading) {
+    // MyPage内の場合はシンプルなローディング
+    if (isInMyPage) {
+      return (
+        <div className="flex justify-center items-center py-12">
+          <div className="text-center">
+            <LoadingSpinner size="medium" />
+            <p className="mt-4 text-sm sm:text-base text-gray-600">
+              サブスクリプション情報を読み込み中...
+            </p>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8 text-center">
@@ -142,8 +157,146 @@ const SubscriptionManagement: React.FC = () => {
     );
   }
 
+  // ステータスの視覚的スタイル（3パターン）
+  const getStatusStyle = (status: string, cancelAtPeriodEnd: boolean) => {
+    // 解約済み（次回更新日まで利用可）
+    if (cancelAtPeriodEnd) {
+      return {
+        border: "border-l-4 border-l-amber-400 bg-amber-50",
+        badge: "bg-amber-100 text-amber-800",
+        icon: "⏳",
+        label: "解約予定",
+      };
+    }
+    // 有効
+    if (status === "active") {
+      return {
+        border: "border-l-4 border-l-green-500 bg-green-50",
+        badge: "bg-green-100 text-green-800",
+        icon: "✓",
+        label: "有効",
+      };
+    }
+    // 支払い遅延
+    if (status === "past_due") {
+      return {
+        border: "border-l-4 border-l-red-500 bg-red-50",
+        badge: "bg-red-100 text-red-800",
+        icon: "!",
+        label: "支払い遅延",
+      };
+    }
+    // 無効
+    return {
+      border: "border-l-4 border-l-gray-400 bg-gray-50",
+      badge: "bg-gray-100 text-gray-700",
+      icon: "−",
+      label: "無効",
+    };
+  };
+
+  // サブスクリプション情報のコンテンツ部分
+  const subscriptionContent = (
+    <>
+      {error && <ErrorAlert message={error} className="mb-3" />}
+      {success && (
+        <SuccessAlert title="成功" message={success} className="mb-3" />
+      )}
+
+      {subscription ? (
+        (() => {
+          const style = getStatusStyle(
+            subscription.status,
+            subscription.cancel_at_period_end,
+          );
+          return (
+            <div className={isInMyPage ? "" : "bg-white rounded-lg shadow p-5"}>
+              {/* ステータスカード */}
+              <div className={`rounded-lg p-4 mb-4 ${style.border}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-base font-bold ${style.badge}`}
+                    >
+                      {style.icon}
+                    </span>
+                    <div>
+                      <p className="text-lg font-bold text-gray-900">
+                        {style.label}
+                      </p>
+                      {subscription.cancel_at_period_end && (
+                        <p className="text-sm text-amber-700">
+                          更新日まで利用可能
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-500">次回請求日</p>
+                    <p className="text-lg font-medium text-gray-900">
+                      {formatNextBillingDate(subscription.current_period_end)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* アクションボタン */}
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() =>
+                    navigate(
+                      isInMyPage
+                        ? "/mypage/payment-history"
+                        : "/payment/history",
+                    )
+                  }
+                  className="px-6 py-3 text-base font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  履歴
+                </button>
+                {subscription.status === "active" &&
+                  !subscription.cancel_at_period_end && (
+                    <button
+                      onClick={handleCancelSubscription}
+                      disabled={cancelLoading}
+                      className="px-6 py-3 text-base font-medium text-red-600 border border-red-300 rounded-lg hover:bg-red-50 disabled:opacity-50 transition-colors"
+                    >
+                      {cancelLoading ? "処理中..." : "解約"}
+                    </button>
+                  )}
+              </div>
+            </div>
+          );
+        })()
+      ) : (
+        <div className={isInMyPage ? "py-4" : "p-5 bg-white rounded-lg shadow"}>
+          <p className="text-lg text-gray-500 mb-4">現在契約がありません</p>
+          <button
+            onClick={() => navigate("/subscription")}
+            className="px-6 py-3 text-base font-medium text-white bg-orange-500 rounded-lg hover:bg-orange-600 transition-colors"
+          >
+            契約する
+          </button>
+        </div>
+      )}
+    </>
+  );
+
+  // MyPage内の場合はシンプルなレイアウト
+  if (isInMyPage) {
+    return (
+      <div className="text-left">
+        <h2 className="text-base sm:text-lg font-bold text-gray-800 mb-3">
+          サブスクリプション
+        </h2>
+        {subscriptionContent}
+      </div>
+    );
+  }
+
+  // 独立ページの場合はフルレイアウト
   return (
-    <div className="min-h-screen bg-gray-50 py-6 sm:py-12 px-3 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-2 sm:py-4 px-2 sm:px-4 lg:px-6">
       <div className="max-w-3xl mx-auto animate-fade-in">
         <div className="text-center mb-6 sm:mb-12">
           <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 px-2">
@@ -153,96 +306,7 @@ const SubscriptionManagement: React.FC = () => {
             現在のサブスクリプション状況を確認できます
           </p>
         </div>
-
-        {error && (
-          <ErrorAlert message={error} className="animate-slide-up mb-6" />
-        )}
-        {success && (
-          <SuccessAlert
-            title="成功"
-            message={success}
-            className="animate-slide-up mb-6"
-          />
-        )}
-
-        {subscription ? (
-          <Card className="divide-y divide-gray-200 animate-slide-up">
-            <div className="p-4 sm:p-6">
-              <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">
-                サブスクリプション情報
-              </h2>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <div>
-                  <p className="text-xs sm:text-sm font-medium text-gray-500">
-                    ステータス
-                  </p>
-                  <p className="mt-1 text-sm sm:text-base md:text-lg font-semibold text-gray-900">
-                    {getStatusText(
-                      subscription.status,
-                      subscription.cancel_at_period_end
-                    )}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-xs sm:text-sm font-medium text-gray-500">
-                    次回請求日
-                  </p>
-                  <p className="mt-1 text-sm sm:text-base md:text-lg font-semibold text-gray-900">
-                    {formatNextBillingDate(subscription.current_period_end)}
-                  </p>
-                </div>
-              </div>
-
-              {subscription.status === "active" &&
-                !subscription.cancel_at_period_end && (
-                  <div className="mt-6 sm:mt-8">
-                    <Button
-                      onClick={handleCancelSubscription}
-                      variant="danger"
-                      size="medium"
-                      isLoading={cancelLoading}
-                      className="btn-hover-effect w-full sm:w-auto text-sm"
-                    >
-                      サブスクリプションをキャンセル
-                    </Button>
-                    <p className="mt-2 text-xs sm:text-sm text-gray-500">
-                      * キャンセルしても次回更新日まではサービスを利用できます
-                    </p>
-                  </div>
-                )}
-            </div>
-
-            <div className="p-4 sm:p-6">
-              <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
-                決済履歴
-              </h3>
-              <Button
-                onClick={() => navigate("/payment/history")}
-                variant="outline"
-                size="small"
-                className="btn-hover-effect w-full sm:w-auto text-sm"
-              >
-                決済履歴を表示
-              </Button>
-            </div>
-          </Card>
-        ) : (
-          <div className="text-center p-4 sm:p-8 bg-white rounded-lg shadow animate-slide-up">
-            <p className="text-sm sm:text-base md:text-lg text-gray-600 mb-4 sm:mb-6">
-              現在アクティブなサブスクリプションはありません
-            </p>
-            <Button
-              onClick={() => navigate("/subscription")}
-              variant="primary"
-              size="medium"
-              className="btn-hover-effect bg-gradient-to-r from-blue-500 to-indigo-600 w-full sm:w-auto text-sm"
-            >
-              サブスクリプションを開始する
-            </Button>
-          </div>
-        )}
+        {subscriptionContent}
       </div>
     </div>
   );
