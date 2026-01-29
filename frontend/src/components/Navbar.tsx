@@ -8,7 +8,6 @@ const Navbar: React.FC = () => {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // ユーザーが管理者かどうかをチェック
   const isAdmin = user?.role === "admin" || user?.isAdmin === true;
 
   const handleLogout = async () => {
@@ -26,29 +25,36 @@ const Navbar: React.FC = () => {
     );
   };
 
+  const linkFocusStyles =
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-juice-orange-500 focus-visible:ring-offset-2 rounded-lg";
+
   return (
-    <nav className="bg-white border-b-2 border-orange-100 sticky top-0 z-50 shadow-sm">
+    <nav className="bg-white/95 backdrop-blur-sm border-b border-gray-200/80 sticky top-0 z-50 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* ロゴ */}
           <div className="flex-shrink-0">
-            <Link to="/" className="flex items-center">
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center mr-3 shadow-md">
+            <Link
+              to="/"
+              className={`flex items-center group ${linkFocusStyles}`}
+              aria-label="Juice Academy ホーム"
+            >
+              <div className="size-10 bg-juice-orange-500 rounded-xl flex items-center justify-center mr-3 shadow-md transition-all duration-200 group-hover:shadow-lg group-hover:-translate-y-0.5">
                 <span className="text-white font-bold text-lg">J</span>
               </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
+              <span className="text-2xl font-bold text-juice-orange-500 tracking-tight">
                 Juice Academy
               </span>
             </Link>
           </div>
 
           {/* デスクトップメニュー */}
-          <div className="hidden md:flex items-center space-x-2">
+          <div className="hidden md:flex items-center gap-2">
             {isAuthenticated ? (
               <>
                 <Link
                   to="/"
-                  className={`nav-link ${
+                  className={`nav-link flex items-center gap-1.5 ${linkFocusStyles} ${
                     isActivePath("/") &&
                     !isActivePath("/mypage") &&
                     !isActivePath("/admin")
@@ -57,10 +63,11 @@ const Navbar: React.FC = () => {
                   }`}
                 >
                   <svg
-                    className="w-4 h-4"
+                    className="size-4"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
+                    aria-hidden="true"
                   >
                     <path
                       strokeLinecap="round"
@@ -74,15 +81,16 @@ const Navbar: React.FC = () => {
 
                 <Link
                   to="/mypage"
-                  className={`nav-link ${
+                  className={`nav-link flex items-center gap-1.5 ${linkFocusStyles} ${
                     isActivePath("/mypage") ? "active" : ""
                   }`}
                 >
                   <svg
-                    className="w-4 h-4"
+                    className="size-4"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
+                    aria-hidden="true"
                   >
                     <path
                       strokeLinecap="round"
@@ -94,19 +102,19 @@ const Navbar: React.FC = () => {
                   マイページ
                 </Link>
 
-                {/* 管理者向けメニュー */}
                 {isAdmin && (
                   <Link
                     to="/admin/announcements"
-                    className={`nav-link ${
+                    className={`nav-link flex items-center gap-1.5 ${linkFocusStyles} ${
                       isActivePath("/admin") ? "active" : ""
                     }`}
                   >
                     <svg
-                      className="w-4 h-4"
+                      className="size-4"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
+                      aria-hidden="true"
                     >
                       <path
                         strokeLinecap="round"
@@ -128,7 +136,7 @@ const Navbar: React.FC = () => {
                 {/* ユーザー情報とログアウト */}
                 <div className="flex items-center ml-4 pl-4 border-l border-gray-200">
                   <div className="flex items-center mr-4">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-semibold text-sm">
+                    <div className="size-8 rounded-full bg-juice-orange-500 flex items-center justify-center text-white font-semibold text-sm ring-2 ring-juice-orange-100 shadow-sm">
                       {user?.nameKana?.charAt(0) || "U"}
                     </div>
                     <div className="ml-3 hidden lg:block">
@@ -136,7 +144,7 @@ const Navbar: React.FC = () => {
                         {user?.nameKana || "ユーザー"}
                       </span>
                       {isAdmin && (
-                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
+                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-juice-orange-100 text-juice-orange-800">
                           管理者
                         </span>
                       )}
@@ -145,13 +153,14 @@ const Navbar: React.FC = () => {
 
                   <button
                     onClick={handleLogout}
-                    className="btn-outline text-sm px-4 py-2"
+                    className={`btn-outline text-sm px-4 py-2 flex items-center gap-1.5 ${linkFocusStyles}`}
                   >
                     <svg
-                      className="w-4 h-4"
+                      className="size-4"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
+                      aria-hidden="true"
                     >
                       <path
                         strokeLinecap="round"
@@ -165,11 +174,14 @@ const Navbar: React.FC = () => {
                 </div>
               </>
             ) : (
-              <div className="flex items-center space-x-3">
-                <Link to="/login" className="btn-outline">
+              <div className="flex items-center gap-3">
+                <Link to="/login" className={`btn-outline ${linkFocusStyles}`}>
                   ログイン
                 </Link>
-                <Link to="/register" className="btn-primary">
+                <Link
+                  to="/register"
+                  className={`btn-primary ${linkFocusStyles}`}
+                >
                   新規登録
                 </Link>
               </div>
@@ -180,15 +192,18 @@ const Navbar: React.FC = () => {
           <div className="md:hidden">
             <button
               onClick={toggleMenu}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              className={`p-2 rounded-lg hover:bg-gray-100 transition-colors duration-150 ${linkFocusStyles}`}
+              aria-expanded={isMenuOpen}
+              aria-controls="mobile-menu"
+              aria-label={isMenuOpen ? "メニューを閉じる" : "メニューを開く"}
             >
-              <span className="sr-only">メニューを開く</span>
               {isMenuOpen ? (
                 <svg
-                  className="h-6 w-6 text-gray-600"
+                  className="size-6 text-gray-600"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
+                  aria-hidden="true"
                 >
                   <path
                     strokeLinecap="round"
@@ -199,10 +214,11 @@ const Navbar: React.FC = () => {
                 </svg>
               ) : (
                 <svg
-                  className="h-6 w-6 text-gray-600"
+                  className="size-6 text-gray-600"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
+                  aria-hidden="true"
                 >
                   <path
                     strokeLinecap="round"
@@ -218,23 +234,26 @@ const Navbar: React.FC = () => {
 
         {/* モバイルメニュー */}
         {isMenuOpen && (
-          <div className="md:hidden border-t border-gray-200 pt-4 pb-4 animate-slide-down">
+          <div
+            id="mobile-menu"
+            className="md:hidden border-t border-gray-200 pt-4 pb-4 animate-slide-down"
+          >
             {isAuthenticated ? (
               <div className="space-y-2">
                 {/* ユーザー情報 */}
-                <div className="flex items-center px-3 py-3 bg-gray-50 rounded-lg mb-4">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-semibold">
+                <div className="flex items-center px-3 py-3 bg-gray-50 rounded-xl mb-4 shadow-inner-sm">
+                  <div className="size-10 rounded-full bg-juice-orange-500 flex items-center justify-center text-white font-semibold ring-2 ring-juice-orange-100 shadow-sm">
                     {user?.nameKana?.charAt(0) || "U"}
                   </div>
                   <div className="ml-3">
                     <span className="block text-base font-medium text-gray-800">
                       {user?.nameKana || "ユーザー"}
                     </span>
-                    <span className="block text-sm text-gray-500">
+                    <span className="block text-sm text-gray-500 truncate max-w-[200px]">
                       {user?.email}
                     </span>
                     {isAdmin && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 mt-1">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-juice-orange-100 text-juice-orange-800 mt-1">
                         管理者
                       </span>
                     )}
@@ -243,7 +262,7 @@ const Navbar: React.FC = () => {
 
                 <Link
                   to="/"
-                  className={`block nav-link ${
+                  className={`block nav-link ${linkFocusStyles} ${
                     isActivePath("/") &&
                     !isActivePath("/mypage") &&
                     !isActivePath("/admin")
@@ -257,7 +276,7 @@ const Navbar: React.FC = () => {
 
                 <Link
                   to="/mypage"
-                  className={`block nav-link ${
+                  className={`block nav-link ${linkFocusStyles} ${
                     isActivePath("/mypage") ? "active" : ""
                   }`}
                   onClick={toggleMenu}
@@ -265,11 +284,10 @@ const Navbar: React.FC = () => {
                   マイページ
                 </Link>
 
-                {/* モバイル管理者向けメニュー */}
                 {isAdmin && (
                   <Link
                     to="/admin/announcements"
-                    className={`block nav-link ${
+                    className={`block nav-link ${linkFocusStyles} ${
                       isActivePath("/admin") ? "active" : ""
                     }`}
                     onClick={toggleMenu}
@@ -284,7 +302,7 @@ const Navbar: React.FC = () => {
                       handleLogout();
                       toggleMenu();
                     }}
-                    className="w-full btn-outline text-left"
+                    className={`w-full btn-outline text-left ${linkFocusStyles}`}
                   >
                     ログアウト
                   </button>
@@ -294,14 +312,14 @@ const Navbar: React.FC = () => {
               <div className="space-y-3">
                 <Link
                   to="/login"
-                  className="block btn-outline w-full text-center"
+                  className={`block btn-outline w-full text-center ${linkFocusStyles}`}
                   onClick={toggleMenu}
                 >
                   ログイン
                 </Link>
                 <Link
                   to="/register"
-                  className="block btn-primary w-full text-center"
+                  className={`block btn-primary w-full text-center ${linkFocusStyles}`}
                   onClick={toggleMenu}
                 >
                   新規登録

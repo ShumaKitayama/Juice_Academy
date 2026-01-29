@@ -43,7 +43,7 @@ const PromotionCode: React.FC = () => {
 
   return (
     <div className="text-left">
-      <h2 className="text-base sm:text-lg font-bold text-gray-800 mb-3">
+      <h2 className="text-base sm:text-lg font-bold text-gray-800 mb-3 text-balance">
         クーポン
       </h2>
 
@@ -67,8 +67,9 @@ const PromotionCode: React.FC = () => {
               value={promoCode}
               onChange={(e) => setPromoCode(e.target.value)}
               placeholder="例: WELCOME2024"
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2 border"
+              className="w-full rounded-lg border-gray-300 shadow-sm focus-visible:border-juice-orange-500 focus-visible:ring-2 focus-visible:ring-juice-orange-200 text-sm p-2 border transition-colors duration-150"
               disabled={loading}
+              spellCheck={false}
             />
           </div>
 

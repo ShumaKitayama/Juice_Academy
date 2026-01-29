@@ -44,10 +44,10 @@ const AnnouncementList: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-2 sm:py-4 px-2 sm:px-4 lg:px-6">
+    <div className="min-h-dvh bg-gray-50 py-2 sm:py-4 px-2 sm:px-4 lg:px-6">
       <div className="max-w-3xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 text-balance">
             お知らせ一覧
           </h1>
           <Button

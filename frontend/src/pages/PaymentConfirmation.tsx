@@ -46,7 +46,7 @@ const PaymentConfirmation: React.FC = () => {
       } catch (err: unknown) {
         const apiError = err as ApiError;
         setError(
-          apiError.response?.data?.error || "支払い方法の登録に失敗しました"
+          apiError.response?.data?.error || "支払い方法の登録に失敗しました",
         );
       } finally {
         setLoading(false);
@@ -66,23 +66,23 @@ const PaymentConfirmation: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center animate-fade-in">
-          <LoadingSpinner size="large" message="決済情報を確認しています..." />
-          <p className="mt-4 text-gray-500">少々お待ちください...</p>
+      <div className="min-h-dvh flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <LoadingSpinner size="large" message="決済情報を確認しています…" />
+          <p className="mt-4 text-gray-500">少々お待ちください…</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-lg mx-auto animate-fade-in">
+    <div className="min-h-dvh bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-lg mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-extrabold text-gray-900 sm:text-4xl bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+          <h1 className="text-3xl font-extrabold text-gray-900 sm:text-4xl text-balance">
             決済情報の確認
           </h1>
-          <p className="mt-2 text-lg text-gray-600">
+          <p className="mt-2 text-lg text-gray-600 text-pretty">
             カード情報の登録状況を確認しています。
           </p>
         </div>

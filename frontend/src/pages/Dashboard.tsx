@@ -24,12 +24,9 @@ const Dashboard: React.FC = () => {
   const [checkingSubscription, setCheckingSubscription] =
     useState<boolean>(true);
 
-  // ユーザーが管理者かどうかをチェック
   const isAdmin = user?.role === "admin" || user?.isAdmin === true;
-
   const navigate = useNavigate();
 
-  // 管理者メニューのナビゲーションハンドラー
   const handleAdminNavigate = (path: string) => {
     navigate(path);
   };
@@ -44,7 +41,6 @@ const Dashboard: React.FC = () => {
     }
   }, [isLoading]);
 
-  // お知らせが新着かどうかを判定（24時間以内に作成されたものを新着とする）
   const isNewAnnouncement = (createdAt: string) => {
     const announcementDate = new Date(createdAt);
     const now = new Date();
@@ -53,14 +49,12 @@ const Dashboard: React.FC = () => {
     return diffInHours <= 24;
   };
 
-  // サブスクリプション状態を確認
   useEffect(() => {
     const checkSubscriptionStatus = async () => {
       try {
         const response = await paymentAPI.getSubscriptionStatus();
         setHasActiveSubscription(response.data.hasActiveSubscription || false);
       } catch {
-        // エラー時はサブスクリプションなしとして扱う
         setHasActiveSubscription(false);
       } finally {
         setCheckingSubscription(false);
@@ -85,39 +79,47 @@ const Dashboard: React.FC = () => {
     fetchAnnouncements();
   }, []);
 
-  // ローディング画面を表示
   if (isLoading) {
     return <Loading />;
   }
 
+  const focusStyles =
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-juice-orange-500 focus-visible:ring-offset-2";
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="max-w-6xl mx-auto px-2 sm:px-4 lg:px-6 py-2 sm:py-4">
+    <div className="min-h-dvh bg-gray-50">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
         {/* ヘッダーセクション */}
-        <div className="mb-4 sm:mb-8">
-          <div className="text-center mb-4 sm:mb-8">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-2 sm:mb-4">
+        <div className="mb-6 sm:mb-10">
+          <div className="text-center mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2 sm:mb-3 tracking-tight">
               おかえりなさい！
-              <span className="block text-lg sm:text-xl md:text-2xl text-orange-600 font-semibold mt-1 sm:mt-2">
+              <span className="block text-lg sm:text-xl md:text-2xl text-juice-orange-600 font-semibold mt-2 sm:mt-3">
                 {user?.nameKana || "ユーザー"}さん
               </span>
             </h1>
-            <p className="text-sm sm:text-base md:text-lg text-gray-600 max-w-2xl mx-auto px-2">
+            <p className="text-sm sm:text-base md:text-lg text-gray-600 max-w-2xl mx-auto px-2 text-pretty">
               Juice
               Academyのドリンクバーサービスへようこそ。美味しいドリンクをお楽しみください。
             </p>
           </div>
         </div>
 
-        {/* お知らせセクション - 最上部に配置 */}
-        <div className="mb-6 sm:mb-12">
+        {/* お知らせセクション */}
+        <section
+          className="mb-6 sm:mb-12"
+          aria-labelledby="announcements-heading"
+        >
           <div className="flex items-center justify-between mb-4 sm:mb-6">
-            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">
+            <h2
+              id="announcements-heading"
+              className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 text-balance"
+            >
               最新のお知らせ
             </h2>
             <Link
               to="/announcements"
-              className="text-orange-600 hover:text-orange-700 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap"
+              className={`text-juice-orange-600 hover:text-juice-orange-700 font-medium text-xs sm:text-sm transition-colors duration-150 whitespace-nowrap rounded ${focusStyles}`}
             >
               すべて見る →
             </Link>
@@ -126,16 +128,17 @@ const Dashboard: React.FC = () => {
           {loading ? (
             <Card className="text-center py-12">
               <LoadingSpinner size="large" />
-              <p className="mt-4 text-gray-600">お知らせを読み込み中...</p>
+              <p className="mt-4 text-gray-600">お知らせを読み込み中…</p>
             </Card>
           ) : error ? (
             <Card variant="simple" className="text-center py-12">
               <div className="text-red-500 mb-4">
                 <svg
-                  className="w-12 h-12 mx-auto"
+                  className="size-12 mx-auto"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
                   <path
                     strokeLinecap="round"
@@ -161,10 +164,11 @@ const Dashboard: React.FC = () => {
             <Card variant="simple" className="text-center py-12">
               <div className="text-gray-400 mb-4">
                 <svg
-                  className="w-12 h-12 mx-auto"
+                  className="size-12 mx-auto"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
                   <path
                     strokeLinecap="round"
@@ -177,17 +181,18 @@ const Dashboard: React.FC = () => {
               <p className="text-gray-600">現在お知らせはありません</p>
             </Card>
           )}
-        </div>
+        </section>
 
         {/* サブスクリプション説明セクション */}
         <Card variant="featured" className="mb-6 sm:mb-12">
           <div className="text-center py-4 sm:py-8 px-2 sm:px-4">
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-6">
+            <div className="size-12 sm:size-16 bg-juice-orange-500 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-6">
               <svg
-                className="w-6 h-6 sm:w-8 sm:h-8 text-white"
+                className="size-6 sm:size-8 text-white"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                aria-hidden="true"
               >
                 <path
                   strokeLinecap="round"
@@ -197,26 +202,36 @@ const Dashboard: React.FC = () => {
                 />
               </svg>
             </div>
-            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 mb-2 sm:mb-4">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 mb-2 sm:mb-4 text-balance">
               ドリンクバーサービス
             </h2>
-            <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 max-w-2xl mx-auto leading-relaxed text-pretty">
               月額3,000円でキャンパス内のドリンクサーバーが使い放題！コーヒー、紅茶、ジュース、炭酸飲料など豊富なメニューをご用意しています。
             </p>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
               {checkingSubscription ? (
-                <div className="flex items-center justify-center gap-2 text-gray-600">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-orange-600"></div>
-                  <span>確認中...</span>
+                <div
+                  className="flex items-center justify-center gap-2 text-gray-600"
+                  role="status"
+                >
+                  <div
+                    className="animate-spin rounded-full size-5 border-b-2 border-juice-orange-600"
+                    aria-hidden="true"
+                  />
+                  <span>確認中…</span>
                 </div>
               ) : (
                 <>
-                  <Link to="/subscription" className="btn-primary">
+                  <Link
+                    to="/subscription"
+                    className={`btn-primary flex items-center justify-center gap-2 ${focusStyles}`}
+                  >
                     <svg
-                      className="w-5 h-5"
+                      className="size-5"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
+                      aria-hidden="true"
                     >
                       <path
                         strokeLinecap="round"
@@ -229,12 +244,16 @@ const Dashboard: React.FC = () => {
                       ? "サブスク確認・管理"
                       : "サブスクリプション登録"}
                   </Link>
-                  <Link to="/mypage" className="btn-secondary">
+                  <Link
+                    to="/mypage"
+                    className={`btn-secondary flex items-center justify-center gap-2 ${focusStyles}`}
+                  >
                     <svg
-                      className="w-5 h-5"
+                      className="size-5"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
+                      aria-hidden="true"
                     >
                       <path
                         strokeLinecap="round"
@@ -252,14 +271,15 @@ const Dashboard: React.FC = () => {
         </Card>
 
         {/* 現在準備中セクション */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-12">
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-12">
           <Card variant="simple" className="text-center py-4 sm:py-8">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+            <div className="size-10 sm:size-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
               <svg
-                className="w-5 h-5 sm:w-6 sm:h-6 text-gray-500"
+                className="size-5 sm:size-6 text-gray-500"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                aria-hidden="true"
               >
                 <path
                   strokeLinecap="round"
@@ -275,24 +295,25 @@ const Dashboard: React.FC = () => {
                 />
               </svg>
             </div>
-            <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-1 sm:mb-2">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-1 sm:mb-2 text-balance">
               設置場所案内
             </h3>
-            <p className="text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4 px-2">
+            <p className="text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4 px-2 text-pretty">
               ドリンクサーバー設置場所をマップで確認
             </p>
-            <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+            <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
               準備中
             </span>
           </Card>
 
           <Card variant="simple" className="text-center py-4 sm:py-8">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+            <div className="size-10 sm:size-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
               <svg
-                className="w-5 h-5 sm:w-6 sm:h-6 text-gray-500"
+                className="size-5 sm:size-6 text-gray-500"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                aria-hidden="true"
               >
                 <path
                   strokeLinecap="round"
@@ -302,13 +323,13 @@ const Dashboard: React.FC = () => {
                 />
               </svg>
             </div>
-            <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-1 sm:mb-2">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-1 sm:mb-2 text-balance">
               利用統計
             </h3>
-            <p className="text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4 px-2">
+            <p className="text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4 px-2 text-pretty">
               月間利用回数や人気ドリンクランキングを表示
             </p>
-            <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+            <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
               準備中
             </span>
           </Card>
@@ -317,12 +338,13 @@ const Dashboard: React.FC = () => {
             variant="simple"
             className="text-center py-4 sm:py-8 sm:col-span-2 lg:col-span-1"
           >
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+            <div className="size-10 sm:size-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
               <svg
-                className="w-5 h-5 sm:w-6 sm:h-6 text-gray-500"
+                className="size-5 sm:size-6 text-gray-500"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                aria-hidden="true"
               >
                 <path
                   strokeLinecap="round"
@@ -332,82 +354,92 @@ const Dashboard: React.FC = () => {
                 />
               </svg>
             </div>
-            <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-1 sm:mb-2">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-1 sm:mb-2 text-balance">
               営業時間
             </h3>
-            <p className="text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4 px-2">
+            <p className="text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4 px-2 text-pretty">
               各設置場所の営業時間とメンテナンス情報
             </p>
-            <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+            <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
               準備中
             </span>
           </Card>
-        </div>
+        </section>
 
         {/* 管理者向けセクション */}
         {isAdmin && (
-          <Card variant="elevated" className="mb-4 sm:mb-8">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4 flex items-center">
-              <svg
-                className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-orange-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                />
-              </svg>
-              管理者メニュー
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <button
-                onClick={() => handleAdminNavigate("/admin/announcements")}
-                className="btn-outline w-full text-left"
-                type="button"
+          <section aria-labelledby="admin-heading">
+            <Card variant="elevated" className="mb-4 sm:mb-8">
+              <h3
+                id="admin-heading"
+                className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4 flex items-center"
               >
                 <svg
-                  className="w-4 h-4 mr-2"
+                  className="size-4 sm:size-5 mr-2 text-juice-orange-600"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"
+                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
                   />
                 </svg>
-                お知らせ管理
-              </button>
-              <button
-                onClick={() =>
-                  handleAdminNavigate("/admin/announcements/create")
-                }
-                className="btn-primary w-full text-left"
-                type="button"
-              >
-                <svg
-                  className="w-4 h-4 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+                管理者メニュー
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <button
+                  onClick={() => handleAdminNavigate("/admin/announcements")}
+                  className={`btn-outline w-full text-left flex items-center ${focusStyles}`}
+                  type="button"
+                  aria-label="お知らせ管理ページへ移動"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                  />
-                </svg>
-                新しいお知らせを作成
-              </button>
-            </div>
-          </Card>
+                  <svg
+                    className="size-4 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"
+                    />
+                  </svg>
+                  お知らせ管理
+                </button>
+                <button
+                  onClick={() =>
+                    handleAdminNavigate("/admin/announcements/create")
+                  }
+                  className={`btn-primary w-full text-left flex items-center ${focusStyles}`}
+                  type="button"
+                  aria-label="新しいお知らせを作成"
+                >
+                  <svg
+                    className="size-4 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                    />
+                  </svg>
+                  新しいお知らせを作成
+                </button>
+              </div>
+            </Card>
+          </section>
         )}
       </div>
     </div>

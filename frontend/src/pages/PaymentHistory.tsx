@@ -87,7 +87,7 @@ const PaymentHistory: React.FC = () => {
 
   const renderContent = () => {
     if (loading) {
-      return <LoadingSpinner message="支払い履歴を読み込み中..." />;
+      return <LoadingSpinner message="支払い履歴を読み込み中…" />;
     }
 
     if (error) {

@@ -53,32 +53,6 @@ const SubscriptionManagement: React.FC = () => {
     fetchSubscription();
   }, []);
 
-  // サブスクリプションのステータスを日本語に変換
-  const getStatusText = (status: string, cancelAtPeriodEnd: boolean) => {
-    if (cancelAtPeriodEnd) {
-      return "次回更新時に終了予定";
-    }
-
-    switch (status) {
-      case "active":
-        return "有効";
-      case "canceled":
-        return "キャンセル済み";
-      case "incomplete":
-        return "未完了";
-      case "incomplete_expired":
-        return "期限切れ";
-      case "past_due":
-        return "支払い遅延";
-      case "trialing":
-        return "トライアル中";
-      case "unpaid":
-        return "未払い";
-      default:
-        return status;
-    }
-  };
-
   // 次回請求日をフォーマット
   const formatNextBillingDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -146,11 +120,11 @@ const SubscriptionManagement: React.FC = () => {
       );
     }
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-dvh flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8 text-center">
           <LoadingSpinner size="large" />
           <p className="mt-4 text-lg text-gray-600">
-            サブスクリプション情報を読み込み中...
+            サブスクリプション情報を読み込み中…
           </p>
         </div>
       </div>
@@ -296,13 +270,13 @@ const SubscriptionManagement: React.FC = () => {
 
   // 独立ページの場合はフルレイアウト
   return (
-    <div className="min-h-screen bg-gray-50 py-2 sm:py-4 px-2 sm:px-4 lg:px-6">
-      <div className="max-w-3xl mx-auto animate-fade-in">
+    <div className="min-h-dvh bg-gray-50 py-2 sm:py-4 px-2 sm:px-4 lg:px-6">
+      <div className="max-w-3xl mx-auto">
         <div className="text-center mb-6 sm:mb-12">
-          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 px-2">
+          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-gray-900 px-2 text-balance">
             サブスクリプション管理
           </h1>
-          <p className="mt-2 sm:mt-4 max-w-2xl mx-auto text-sm sm:text-base md:text-xl text-gray-500 px-2">
+          <p className="mt-2 sm:mt-4 max-w-2xl mx-auto text-sm sm:text-base md:text-xl text-gray-500 px-2 text-pretty">
             現在のサブスクリプション状況を確認できます
           </p>
         </div>

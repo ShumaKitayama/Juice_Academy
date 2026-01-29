@@ -91,23 +91,23 @@ const PaymentSetup: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center animate-fade-in">
-          <LoadingSpinner size="large" message="決済情報を準備しています..." />
-          <p className="mt-4 text-gray-500">少々お待ちください...</p>
+      <div className="min-h-dvh flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <LoadingSpinner size="large" message="決済情報を準備しています…" />
+          <p className="mt-4 text-gray-500">少々お待ちください…</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-2 sm:py-4 px-2 sm:px-4 lg:px-6">
-      <div className="max-w-lg mx-auto animate-fade-in">
+    <div className="min-h-dvh bg-gray-50 py-2 sm:py-4 px-2 sm:px-4 lg:px-6">
+      <div className="max-w-lg mx-auto">
         <div className="text-center mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 px-2">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 px-2 text-balance">
             決済情報の登録
           </h1>
-          <p className="mt-2 text-sm sm:text-base md:text-lg text-gray-600 px-2">
+          <p className="mt-2 text-sm sm:text-base md:text-lg text-gray-600 px-2 text-pretty">
             サービスを利用するには、カード情報の登録が必要です。
           </p>
         </div>

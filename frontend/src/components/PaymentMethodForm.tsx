@@ -6,7 +6,6 @@ import Button from "./Button";
 import ErrorAlert from "./ErrorAlert";
 import SuccessAlert from "./SuccessAlert";
 
-// APIエラー型定義
 interface ApiError {
   response?: {
     data?: {
@@ -19,7 +18,6 @@ interface PaymentMethodFormProps {
   onSuccess: () => void;
 }
 
-// Stripeエラーメッセージの日本語化
 const translateStripeError = (errorMessage: string): string => {
   const errorMap: { [key: string]: string } = {
     "Your card number is incomplete.": "カード番号が不完全です。",
@@ -40,7 +38,6 @@ const translateStripeError = (errorMessage: string): string => {
     "There was a problem with your card.": "カードに問題がありました。",
   };
 
-  // エラーメッセージが登録されていない場合はそのまま返す
   return errorMap[errorMessage] || errorMessage;
 };
 
@@ -55,34 +52,30 @@ const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({ onSuccess }) => {
   const elements = useElements();
   const { user } = useAuth();
 
-  // カードスタイル - 見た目を改善
   const cardStyle = {
     style: {
       base: {
-        color: "#32325d",
+        color: "#374151",
         fontFamily: '"Noto Sans JP", "Helvetica Neue", Helvetica, sans-serif',
         fontSmoothing: "antialiased",
         fontSize: "16px",
         "::placeholder": {
-          color: "#aab7c4",
+          color: "#9ca3af",
         },
         padding: "12px 15px",
-        backgroundColor: "#f8fafc",
-        boxShadow: "inset 0 1px 2px rgba(0, 0, 0, 0.05)",
-        transition: "box-shadow 0.3s, background-color 0.3s",
+        backgroundColor: "#f9fafb",
       },
       invalid: {
-        color: "#fa755a",
-        iconColor: "#fa755a",
+        color: "#dc2626",
+        iconColor: "#dc2626",
       },
       complete: {
-        color: "#059669",
-        iconColor: "#059669",
+        color: "#16a34a",
+        iconColor: "#16a34a",
       },
     },
   };
 
-  // コンポーネントマウント時にSetupIntentを取得
   useEffect(() => {
     const getSetupIntent = async () => {
       if (!user) return;
@@ -93,7 +86,7 @@ const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({ onSuccess }) => {
       } catch (err: unknown) {
         const apiError = err as ApiError;
         setError(
-          apiError.response?.data?.error || "SetupIntentの取得に失敗しました"
+          apiError.response?.data?.error || "SetupIntentの取得に失敗しました",
         );
       }
     };
@@ -101,14 +94,12 @@ const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({ onSuccess }) => {
     getSetupIntent();
   }, [user]);
 
-  // カード入力時のバリデーション
   const handleCardChange = (event: { error?: { message: string } }) => {
     setCardError(
-      event.error ? translateStripeError(event.error.message) : null
+      event.error ? translateStripeError(event.error.message) : null,
     );
   };
 
-  // フォーム送信ハンドラ
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
@@ -116,7 +107,6 @@ const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({ onSuccess }) => {
       return;
     }
 
-    // カードエラーがある場合は処理を中止
     if (cardError) {
       return;
     }
@@ -124,7 +114,6 @@ const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({ onSuccess }) => {
     setProcessing(true);
     setError(null);
 
-    // カード情報を取得
     const cardElement = elements.getElement(CardElement);
     if (!cardElement) {
       setError("カード情報の取得に失敗しました");
@@ -132,7 +121,6 @@ const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({ onSuccess }) => {
       return;
     }
 
-    // Stripeに支払い方法を登録
     const { error: stripeError, setupIntent } = await stripe.confirmCardSetup(
       clientSecret,
       {
@@ -143,14 +131,14 @@ const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({ onSuccess }) => {
             email: user.email,
           },
         },
-      }
+      },
     );
 
     if (stripeError) {
       setError(
         translateStripeError(
-          stripeError.message || "カード情報の登録に失敗しました"
-        )
+          stripeError.message || "カード情報の登録に失敗しました",
+        ),
       );
       setProcessing(false);
       return;
@@ -158,17 +146,16 @@ const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({ onSuccess }) => {
 
     if (setupIntent && setupIntent.status === "succeeded") {
       try {
-        // バックエンドに支払い方法の登録を通知
         await paymentAPI.confirmSetup(
           user.id,
-          setupIntent.payment_method as string
+          setupIntent.payment_method as string,
         );
         setSucceeded(true);
         onSuccess();
       } catch (err: unknown) {
         const apiError = err as ApiError;
         setError(
-          apiError.response?.data?.error || "支払い方法の登録に失敗しました"
+          apiError.response?.data?.error || "支払い方法の登録に失敗しました",
         );
       }
     } else {
@@ -179,18 +166,19 @@ const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({ onSuccess }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in">
-      <div className="bg-white p-6 rounded-lg shadow-md card-payment-form">
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-medium text-gray-900">
+          <h3 className="text-lg font-semibold text-gray-900 text-balance">
             クレジットカード情報
           </h3>
-          <div className="flex space-x-2">
+          <div className="flex gap-2">
             <svg
               className="h-6 w-10"
               viewBox="0 0 48 32"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
+              aria-label="Visa"
             >
               <rect width="48" height="32" rx="4" fill="#1434CB" />
               <text
@@ -211,6 +199,7 @@ const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({ onSuccess }) => {
               viewBox="0 0 48 32"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
+              aria-label="Mastercard"
             >
               <rect width="48" height="32" rx="4" fill="#EB001B" />
               <circle cx="18" cy="16" r="8" fill="#EB001B" />
@@ -221,6 +210,7 @@ const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({ onSuccess }) => {
               viewBox="0 0 48 32"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
+              aria-label="American Express"
             >
               <rect width="48" height="32" rx="4" fill="#006FCF" />
               <text
@@ -239,13 +229,10 @@ const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({ onSuccess }) => {
           </div>
         </div>
 
-        {error && <ErrorAlert message={error} className="animate-slide-up" />}
+        {error && <ErrorAlert message={error} />}
 
         {succeeded && (
-          <SuccessAlert
-            message="カード情報が正常に登録されました"
-            className="animate-slide-up"
-          />
+          <SuccessAlert message="カード情報が正常に登録されました" />
         )}
 
         <div className="mb-6">
@@ -256,10 +243,10 @@ const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({ onSuccess }) => {
             カード情報
           </label>
           <div
-            className={`border rounded-md p-4 bg-gray-50 transition-all ${
+            className={`border-2 rounded-lg p-4 bg-gray-50 transition-colors duration-150 ${
               cardError
-                ? "border-red-500 focus-within:ring-2 focus-within:ring-red-500"
-                : "border-gray-300 hover:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500"
+                ? "border-red-500 focus-within:ring-2 focus-within:ring-red-200"
+                : "border-gray-300 hover:border-gray-400 focus-within:ring-2 focus-within:ring-juice-orange-200 focus-within:border-juice-orange-500"
             }`}
           >
             <CardElement
@@ -270,22 +257,20 @@ const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({ onSuccess }) => {
             />
           </div>
           {cardError && (
-            <p className="mt-2 text-sm text-red-600 animate-slide-up">
+            <p className="mt-2 text-sm text-red-600" role="alert">
               {cardError}
             </p>
           )}
-          <div className="mt-3 text-xs text-gray-500 space-y-1">
-            <p>
-              *
-              セキュリティのため、カード情報は当サイトのサーバーには保存されません。
-            </p>
-          </div>
-          <div className="mt-4 flex items-center p-3 bg-blue-50 rounded-md">
+          <p className="mt-3 text-xs text-gray-500">
+            ※セキュリティのため、カード情報は当サイトのサーバーには保存されません。
+          </p>
+          <div className="mt-4 flex items-center p-3 bg-blue-50 rounded-lg">
             <svg
-              className="h-5 w-5 text-blue-500"
+              className="size-5 text-blue-500 flex-shrink-0"
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
               fill="currentColor"
+              aria-hidden="true"
             >
               <path
                 fillRule="evenodd"
@@ -308,7 +293,6 @@ const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({ onSuccess }) => {
             processing || !stripe || !clientSecret || succeeded || !!cardError
           }
           fullWidth
-          className="btn-hover-effect"
         >
           {succeeded ? "登録済み" : "カード情報を登録する"}
         </Button>

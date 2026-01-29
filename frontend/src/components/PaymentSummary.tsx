@@ -18,12 +18,10 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
   discount = 0,
   tax = 0,
 }) => {
-  // 税込み金額を計算
   const taxAmount = planPrice * (tax / 100);
   const discountAmount = planPrice * (discount / 100);
   const totalAmount = planPrice + taxAmount - discountAmount;
 
-  // 金額をフォーマット
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("ja-JP", {
       style: "currency",
@@ -32,7 +30,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
   };
 
   return (
-    <Card title="お支払い情報" className="mb-6 card-hover">
+    <Card title="お支払い情報" className="mb-6">
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <span className="text-gray-600">プラン</span>
@@ -41,26 +39,30 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
 
         <div className="flex justify-between items-center">
           <span className="text-gray-600">料金</span>
-          <span className="font-medium">{formatCurrency(planPrice)}</span>
+          <span className="font-medium tabular-nums">
+            {formatCurrency(planPrice)}
+          </span>
         </div>
 
         {discount > 0 && (
           <div className="flex justify-between items-center text-green-600">
             <span>割引</span>
-            <span>-{formatCurrency(discountAmount)}</span>
+            <span className="tabular-nums">
+              -{formatCurrency(discountAmount)}
+            </span>
           </div>
         )}
 
         {tax > 0 && (
           <div className="flex justify-between items-center">
             <span className="text-gray-600">消費税（{tax}%）</span>
-            <span>{formatCurrency(taxAmount)}</span>
+            <span className="tabular-nums">{formatCurrency(taxAmount)}</span>
           </div>
         )}
 
         <div className="border-t border-gray-200 pt-4 flex justify-between items-center">
           <span className="font-semibold">合計</span>
-          <span className="font-bold text-lg bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+          <span className="font-bold text-lg text-juice-orange-600 tabular-nums">
             {formatCurrency(totalAmount)}
           </span>
         </div>
@@ -73,18 +75,19 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
         {nextBillingDate && (
           <div className="flex justify-between items-center text-sm text-gray-500">
             <span>次回請求日</span>
-            <span>{nextBillingDate}</span>
+            <span className="tabular-nums">{nextBillingDate}</span>
           </div>
         )}
       </div>
 
-      <div className="mt-6 bg-blue-50 p-4 rounded-md text-sm text-blue-700 border border-blue-100">
+      <div className="mt-6 bg-blue-50 p-4 rounded-lg text-sm text-blue-700 border border-blue-100">
         <div className="flex items-start">
           <svg
-            className="h-5 w-5 text-blue-500 mr-2 mt-0.5"
+            className="size-5 text-blue-500 mr-2 mt-0.5 flex-shrink-0"
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 20 20"
             fill="currentColor"
+            aria-hidden="true"
           >
             <path
               fillRule="evenodd"
@@ -92,21 +95,20 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
               clipRule="evenodd"
             />
           </svg>
-          <div>
-            <p>
-              サブスクリプションはいつでも解約できます。解約した場合、次回の請求日以降は料金が発生しません。
-            </p>
-          </div>
+          <p className="text-pretty">
+            サブスクリプションはいつでも解約できます。解約した場合、次回の請求日以降は料金が発生しません。
+          </p>
         </div>
       </div>
 
       <div className="mt-6 flex justify-center">
-        <div className="flex space-x-4">
+        <div className="flex gap-4">
           <svg
             className="h-8 w-12"
             viewBox="0 0 48 32"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
+            aria-label="Visa"
           >
             <rect width="48" height="32" rx="4" fill="#1434CB" />
             <text
@@ -127,6 +129,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
             viewBox="0 0 48 32"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
+            aria-label="Mastercard"
           >
             <rect width="48" height="32" rx="4" fill="#EB001B" />
             <circle cx="18" cy="16" r="8" fill="#EB001B" />
@@ -137,6 +140,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
             viewBox="0 0 48 32"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
+            aria-label="American Express"
           >
             <rect width="48" height="32" rx="4" fill="#006FCF" />
             <text

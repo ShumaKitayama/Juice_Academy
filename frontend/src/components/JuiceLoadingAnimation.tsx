@@ -17,31 +17,36 @@ const JuiceLoadingAnimation: React.FC<JuiceLoadingAnimationProps> = ({
   }, [onComplete, duration]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-orange-50 to-orange-100 overflow-hidden">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-juice-orange-50 overflow-hidden"
+      role="status"
+      aria-live="polite"
+      aria-label="ローディング中"
+    >
       {/* 背景の装飾的な円 */}
-      <div className="absolute inset-0">
-        <div className="absolute top-20 left-20 w-32 h-32 bg-orange-200 rounded-full opacity-20 animate-pulse"></div>
+      <div className="absolute inset-0" aria-hidden="true">
+        <div className="absolute top-20 left-20 size-32 bg-juice-orange-200 rounded-full opacity-20 animate-pulse" />
         <div
-          className="absolute bottom-32 right-32 w-24 h-24 bg-orange-300 rounded-full opacity-30 animate-pulse"
+          className="absolute bottom-32 right-32 size-24 bg-juice-orange-300 rounded-full opacity-30 animate-pulse"
           style={{ animationDelay: "0.5s" }}
-        ></div>
+        />
         <div
-          className="absolute top-1/2 left-10 w-16 h-16 bg-orange-400 rounded-full opacity-25 animate-pulse"
+          className="absolute top-1/2 left-10 size-16 bg-juice-orange-400 rounded-full opacity-25 animate-pulse"
           style={{ animationDelay: "1s" }}
-        ></div>
+        />
       </div>
 
       {/* メインのグラスコンテナ */}
       <div className="relative z-10 flex flex-col items-center">
         {/* ジュース注ぎ口のアニメーション */}
-        <div className="relative mb-8">
+        <div className="relative mb-8" aria-hidden="true">
           <div className="juice-pour-container">
-            <div className="juice-stream"></div>
+            <div className="juice-stream" />
           </div>
         </div>
 
         {/* グラスとジュース */}
-        <div className="relative">
+        <div className="relative" aria-hidden="true">
           {/* グラスの外枠 */}
           <svg
             width="200"
@@ -49,7 +54,6 @@ const JuiceLoadingAnimation: React.FC<JuiceLoadingAnimationProps> = ({
             viewBox="0 0 200 280"
             className="relative z-20"
           >
-            {/* グラスの影 */}
             <defs>
               <linearGradient
                 id="glassGradient"
@@ -71,24 +75,6 @@ const JuiceLoadingAnimation: React.FC<JuiceLoadingAnimationProps> = ({
                   style={{ stopColor: "rgba(255,255,255,0.8)" }}
                 />
               </linearGradient>
-              <linearGradient
-                id="juiceGradient"
-                x1="0%"
-                y1="0%"
-                x2="100%"
-                y2="0%"
-              >
-                <stop offset="0%" style={{ stopColor: "#ff8a4c" }} />
-                <stop offset="50%" style={{ stopColor: "#ff5a1f" }} />
-                <stop offset="100%" style={{ stopColor: "#d03801" }} />
-              </linearGradient>
-              <filter id="glow">
-                <feGaussianBlur stdDeviation="3" result="coloredBlur" />
-                <feMerge>
-                  <feMergeNode in="coloredBlur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
             </defs>
 
             {/* グラスの本体 */}
@@ -115,26 +101,22 @@ const JuiceLoadingAnimation: React.FC<JuiceLoadingAnimationProps> = ({
             className="absolute bottom-0 left-0 w-full overflow-hidden"
             style={{ borderRadius: "0 0 10px 10px" }}
           >
-            <div className="juice-liquid"></div>
-
-            {/* 液体の表面波紋 */}
-            <div className="juice-surface-waves"></div>
-
-            {/* 泡エフェクト */}
-            <div className="bubble bubble-1"></div>
-            <div className="bubble bubble-2"></div>
-            <div className="bubble bubble-3"></div>
-            <div className="bubble bubble-4"></div>
+            <div className="juice-liquid" />
+            <div className="juice-surface-waves" />
+            <div className="bubble bubble-1" />
+            <div className="bubble bubble-2" />
+            <div className="bubble bubble-3" />
+            <div className="bubble bubble-4" />
           </div>
         </div>
 
         {/* ロード中テキスト */}
         <div className="mt-8 text-center">
-          <h2 className="text-2xl font-bold text-orange-600 mb-2 animate-pulse">
+          <h2 className="text-2xl font-bold text-juice-orange-600 mb-2 animate-pulse text-balance">
             Juice Academy
           </h2>
-          <p className="text-orange-500 text-lg animate-fade-in-out">
-            美味しい学習体験を準備中...
+          <p className="text-juice-orange-500 text-lg animate-fade-in-out">
+            美味しい学習体験を準備中…
           </p>
         </div>
       </div>
@@ -151,7 +133,7 @@ const JuiceLoadingAnimation: React.FC<JuiceLoadingAnimationProps> = ({
         .juice-stream {
           width: 8px;
           height: 0;
-          background: linear-gradient(to bottom, #ff8a4c, #ff5a1f);
+          background-color: #ff5a1f;
           position: absolute;
           left: 50%;
           transform: translateX(-50%);
@@ -170,7 +152,7 @@ const JuiceLoadingAnimation: React.FC<JuiceLoadingAnimationProps> = ({
         .juice-liquid {
           width: 100px;
           height: 0;
-          background: linear-gradient(45deg, #ff8a4c 0%, #ff5a1f 50%, #d03801 100%);
+          background-color: #ff5a1f;
           position: relative;
           left: 50px;
           border-radius: 0 0 10px 10px;
@@ -307,6 +289,20 @@ const JuiceLoadingAnimation: React.FC<JuiceLoadingAnimationProps> = ({
           0%, 90% { opacity: 0; }
           95% { opacity: 1; }
           100% { opacity: 0; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .juice-stream,
+          .juice-liquid,
+          .juice-surface-waves,
+          .bubble,
+          .glass-highlight,
+          .animate-fade-in-out {
+            animation: none;
+          }
+          .juice-liquid {
+            height: 180px;
+          }
         }
         `}
       </style>

@@ -6,12 +6,9 @@ import SuccessAlert from "../components/SuccessAlert";
 
 const SubscriptionSuccess: React.FC = () => {
   const [loading, setLoading] = useState(true);
-  // const [searchParams] = useSearchParams();
-  // const sessionId = searchParams.get('session_id'); // 後方互換性のため残しておく
   const navigate = useNavigate();
 
   useEffect(() => {
-    // 3秒後に自動的にローディング状態を解除
     const timer = setTimeout(() => {
       setLoading(false);
     }, 3000);
@@ -25,11 +22,11 @@ const SubscriptionSuccess: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-dvh flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8 text-center">
           <LoadingSpinner size="large" />
           <p className="mt-4 text-lg text-gray-600">
-            サブスクリプション情報を確認中...
+            サブスクリプション情報を確認中…
           </p>
         </div>
       </div>
@@ -37,13 +34,29 @@ const SubscriptionSuccess: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 animate-fade-in">
+    <div className="min-h-dvh flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <h1 className="text-3xl font-extrabold text-gray-900 sm:text-4xl bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+          <div className="mx-auto size-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+            <svg
+              className="size-8 text-green-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          </div>
+          <h1 className="text-3xl font-extrabold text-gray-900 sm:text-4xl text-balance">
             サブスクリプション登録完了
           </h1>
-          <p className="mt-3 max-w-2xl mx-auto text-xl text-gray-500 sm:mt-4">
+          <p className="mt-3 max-w-2xl mx-auto text-xl text-gray-500 sm:mt-4 text-pretty">
             ありがとうございます！
           </p>
         </div>
@@ -51,7 +64,6 @@ const SubscriptionSuccess: React.FC = () => {
         <SuccessAlert
           title="登録完了"
           message="サブスクリプションが正常に登録されました。ダッシュボードからコンテンツにアクセスできます。"
-          className="animate-slide-up"
         />
 
         <div className="mt-8 text-center">
@@ -59,7 +71,7 @@ const SubscriptionSuccess: React.FC = () => {
             onClick={handleGoToDashboard}
             variant="primary"
             size="large"
-            className="px-8 btn-hover-effect bg-gradient-to-r from-blue-500 to-indigo-600"
+            className="px-8"
           >
             ダッシュボードへ
           </Button>

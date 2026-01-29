@@ -196,7 +196,7 @@ const PaymentMethod: React.FC = () => {
   if (loading && paymentMethods.length === 0) {
     return (
       <div className="flex justify-center items-center py-12">
-        <LoadingSpinner size="medium" message="支払い方法を読み込み中..." />
+        <LoadingSpinner size="medium" message="支払い方法を読み込み中…" />
       </div>
     );
   }
@@ -244,8 +244,9 @@ const PaymentMethod: React.FC = () => {
                       )}
                       <button
                         onClick={() => handleDeletePaymentMethod(method.id)}
-                        className="text-sm text-red-600 hover:text-red-800"
+                        className="text-sm text-red-600 hover:text-red-800 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 rounded"
                         disabled={loading}
+                        aria-label={`カード ${method.card.last4} を削除`}
                       >
                         削除
                       </button>

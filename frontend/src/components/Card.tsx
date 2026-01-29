@@ -27,13 +27,13 @@ const Card: React.FC<CardProps> = ({
   const getVariantStyles = () => {
     switch (variant) {
       case "modern":
-        return "card-modern";
+        return "bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden";
       case "featured":
-        return "card-featured";
+        return "bg-juice-orange-50 rounded-xl border-[1.5px] border-juice-orange-300 overflow-hidden relative before:absolute before:top-0 before:left-0 before:right-0 before:h-[3px] before:bg-juice-orange-500 shadow-sm";
       case "simple":
-        return "card-simple";
+        return "bg-white rounded-lg shadow-sm border border-gray-200";
       case "elevated":
-        return "bg-white rounded-2xl shadow-xl border-0 overflow-hidden";
+        return "bg-white rounded-xl shadow-md border-0 overflow-hidden";
       default:
         return `bg-white rounded-xl shadow-sm ${
           border ? "border border-gray-200" : "border-0"
@@ -47,20 +47,20 @@ const Card: React.FC<CardProps> = ({
       case "none":
         return "";
       case "small":
-        return "p-3 sm:p-4"; // スマホ: 12px, PC: 16px
+        return "p-3 sm:p-4";
       case "medium":
-        return "p-4 sm:p-6"; // スマホ: 16px, PC: 24px
+        return "p-4 sm:p-6";
       case "large":
-        return "p-4 sm:p-6 lg:p-8"; // スマホ: 16px, タブレット: 24px, PC: 32px
+        return "p-4 sm:p-6 lg:p-8";
       default:
         return "p-4 sm:p-6";
     }
   };
 
-  // ホバーエフェクト
+  // ホバーエフェクト（shadow + translateY for depth）
   const getHoverStyles = () => {
     if (!hover) return "";
-    return "transition-all duration-300 ease-out hover:shadow-lg hover:-translate-y-1";
+    return "transition-all duration-200 ease-smooth hover:shadow-lg hover:-translate-y-0.5";
   };
 
   const cardClasses = `
@@ -75,12 +75,12 @@ const Card: React.FC<CardProps> = ({
       {(title || subtitle) && (
         <div className={`${title && subtitle ? "mb-4" : "mb-3"}`}>
           {title && (
-            <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-1 sm:mb-2 leading-tight">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-1 sm:mb-2 leading-tight text-balance tracking-tight">
               {title}
             </h3>
           )}
           {subtitle && (
-            <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
+            <p className="text-sm sm:text-base text-gray-600 leading-relaxed text-pretty tracking-normal">
               {subtitle}
             </p>
           )}

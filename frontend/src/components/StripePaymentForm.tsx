@@ -13,7 +13,6 @@ import ErrorAlert from "./ErrorAlert";
 import LoadingSpinner from "./LoadingSpinner";
 import SuccessAlert from "./SuccessAlert";
 
-// APIエラー型定義
 interface ApiError {
   response?: {
     data?: {
@@ -22,7 +21,6 @@ interface ApiError {
   };
 }
 
-// Stripeエラーメッセージの日本語化
 const translateStripeError = (errorMessage: string): string => {
   const errorMap: { [key: string]: string } = {
     "Your card number is incomplete.": "カード番号が不完全です。",
@@ -43,11 +41,9 @@ const translateStripeError = (errorMessage: string): string => {
     "There was a problem with your card.": "カードに問題がありました。",
   };
 
-  // エラーメッセージが登録されていない場合はそのまま返す
   return errorMap[errorMessage] || errorMessage;
 };
 
-// 実際のフォームコンポーネント
 const PaymentForm: React.FC<{
   onSuccess: () => void;
   clientSecret: string;
@@ -70,7 +66,6 @@ const PaymentForm: React.FC<{
     setProcessing(true);
     setError(null);
 
-    // Stripeに支払い方法を登録
     const { error: stripeError, setupIntent } = await stripe.confirmSetup({
       elements,
       confirmParams: {
@@ -82,8 +77,8 @@ const PaymentForm: React.FC<{
     if (stripeError) {
       setError(
         translateStripeError(
-          stripeError.message || "カード情報の登録に失敗しました"
-        )
+          stripeError.message || "カード情報の登録に失敗しました",
+        ),
       );
       setProcessing(false);
       return;
@@ -91,17 +86,16 @@ const PaymentForm: React.FC<{
 
     if (setupIntent && setupIntent.status === "succeeded") {
       try {
-        // バックエンドに支払い方法の登録を通知
         await paymentAPI.confirmSetup(
           user.id,
-          setupIntent.payment_method as string
+          setupIntent.payment_method as string,
         );
         setSucceeded(true);
         onSuccess();
       } catch (err: unknown) {
         const apiError = err as ApiError;
         setError(
-          apiError.response?.data?.error || "支払い方法の登録に失敗しました"
+          apiError.response?.data?.error || "支払い方法の登録に失敗しました",
         );
       }
     } else {
@@ -112,18 +106,19 @@ const PaymentForm: React.FC<{
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in">
-      <div className="bg-white p-6 rounded-lg shadow-md card-payment-form">
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-medium text-gray-900">
+          <h3 className="text-lg font-semibold text-gray-900 text-balance">
             クレジットカード情報
           </h3>
-          <div className="flex space-x-2">
+          <div className="flex gap-2">
             <svg
               className="h-6 w-10"
               viewBox="0 0 48 32"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
+              aria-label="Visa"
             >
               <rect width="48" height="32" rx="4" fill="#1434CB" />
               <text
@@ -144,6 +139,7 @@ const PaymentForm: React.FC<{
               viewBox="0 0 48 32"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
+              aria-label="Mastercard"
             >
               <rect width="48" height="32" rx="4" fill="#EB001B" />
               <circle cx="18" cy="16" r="8" fill="#EB001B" />
@@ -154,6 +150,7 @@ const PaymentForm: React.FC<{
               viewBox="0 0 48 32"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
+              aria-label="American Express"
             >
               <rect width="48" height="32" rx="4" fill="#006FCF" />
               <text
@@ -172,12 +169,9 @@ const PaymentForm: React.FC<{
           </div>
         </div>
 
-        {error && <ErrorAlert message={error} className="animate-slide-up" />}
+        {error && <ErrorAlert message={error} />}
         {succeeded && (
-          <SuccessAlert
-            message="カード情報が正常に登録されました"
-            className="animate-slide-up"
-          />
+          <SuccessAlert message="カード情報が正常に登録されました" />
         )}
 
         <div className="mb-6">
@@ -195,18 +189,16 @@ const PaymentForm: React.FC<{
               },
             }}
           />
-          <div className="mt-3 text-xs text-gray-500 space-y-1">
-            <p>
-              *
-              セキュリティのため、カード情報は当サイトのサーバーには保存されません。
-            </p>
-          </div>
-          <div className="mt-4 flex items-center p-3 bg-blue-50 rounded-md">
+          <p className="mt-3 text-xs text-gray-500">
+            ※セキュリティのため、カード情報は当サイトのサーバーには保存されません。
+          </p>
+          <div className="mt-4 flex items-center p-3 bg-blue-50 rounded-lg">
             <svg
-              className="h-5 w-5 text-blue-500"
+              className="size-5 text-blue-500 flex-shrink-0"
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
               fill="currentColor"
+              aria-hidden="true"
             >
               <path
                 fillRule="evenodd"
@@ -227,7 +219,6 @@ const PaymentForm: React.FC<{
           isLoading={processing}
           disabled={processing || !stripe || succeeded}
           fullWidth
-          className="btn-hover-effect"
         >
           {succeeded ? "登録済み" : "カード情報を登録する"}
         </Button>
@@ -236,7 +227,6 @@ const PaymentForm: React.FC<{
   );
 };
 
-// 親コンポーネント
 interface StripePaymentFormProps {
   onSuccess: () => void;
 }
@@ -247,7 +237,6 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({ onSuccess }) => {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
-  // コンポーネントマウント時にSetupIntentを取得
   useEffect(() => {
     const getSetupIntent = async () => {
       if (!user) return;
@@ -259,7 +248,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({ onSuccess }) => {
       } catch (err: unknown) {
         const apiError = err as ApiError;
         setError(
-          apiError.response?.data?.error || "SetupIntentの取得に失敗しました"
+          apiError.response?.data?.error || "SetupIntentの取得に失敗しました",
         );
       } finally {
         setLoading(false);
@@ -272,7 +261,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({ onSuccess }) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-8">
-        <LoadingSpinner size="medium" message="決済フォームを読み込み中..." />
+        <LoadingSpinner size="medium" message="決済フォームを読み込み中…" />
       </div>
     );
   }
@@ -295,10 +284,10 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({ onSuccess }) => {
         appearance: {
           theme: "stripe",
           variables: {
-            colorPrimary: "#4f46e5",
+            colorPrimary: "#ff5a1f",
             colorBackground: "#ffffff",
-            colorText: "#1f2937",
-            colorDanger: "#ef4444",
+            colorText: "#374151",
+            colorDanger: "#dc2626",
             fontFamily:
               '"Noto Sans JP", "Helvetica Neue", Helvetica, sans-serif',
             spacingUnit: "4px",
@@ -306,28 +295,28 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({ onSuccess }) => {
           },
           rules: {
             ".Input": {
-              border: "1px solid #e5e7eb",
-              boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+              border: "2px solid #d1d5db",
+              boxShadow: "none",
               padding: "12px",
             },
             ".Input:focus": {
-              border: "1px solid #4f46e5",
-              boxShadow: "0 0 0 1px #4f46e5",
+              border: "2px solid #ff5a1f",
+              boxShadow: "0 0 0 2px rgba(255, 90, 31, 0.2)",
             },
             ".Input--invalid": {
-              border: "1px solid #ef4444",
-              boxShadow: "0 0 0 1px #ef4444",
+              border: "2px solid #dc2626",
+              boxShadow: "0 0 0 2px rgba(220, 38, 38, 0.2)",
             },
             ".Tab": {
-              border: "1px solid #e5e7eb",
-              boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+              border: "2px solid #e5e7eb",
+              boxShadow: "none",
             },
             ".Tab:hover": {
-              border: "1px solid #4f46e5",
+              border: "2px solid #d1d5db",
             },
             ".Tab--selected": {
-              border: "1px solid #4f46e5",
-              boxShadow: "0 0 0 1px #4f46e5",
+              border: "2px solid #ff5a1f",
+              boxShadow: "none",
             },
           },
         },

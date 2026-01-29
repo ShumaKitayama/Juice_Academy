@@ -8,7 +8,7 @@ interface OTPInputProps {
   loading?: boolean;
   error?: string;
   email?: string;
-  expiryTime?: number; // 秒単位
+  expiryTime?: number;
 }
 
 const OTPInput: React.FC<OTPInputProps> = ({
@@ -18,7 +18,7 @@ const OTPInput: React.FC<OTPInputProps> = ({
   loading = false,
   error,
   email,
-  expiryTime = 300, // デフォルト5分
+  expiryTime = 300,
 }) => {
   const [otp, setOtp] = useState<string[]>(new Array(length).fill(""));
   const [activeIndex, setActiveIndex] = useState(0);
@@ -45,7 +45,7 @@ const OTPInput: React.FC<OTPInputProps> = ({
     }
   }, [activeIndex]);
 
-  // OTP完了チェック（useCallbackで最適化）
+  // OTP完了チェック
   const [hasCompleted, setHasCompleted] = useState(false);
 
   useEffect(() => {
@@ -58,34 +58,27 @@ const OTPInput: React.FC<OTPInputProps> = ({
       setHasCompleted(true);
       onComplete(otpString);
     }
-    // OTPが不完全になった場合はリセット
     if (otpString.length < length) {
       setHasCompleted(false);
     }
   }, [otp, length, onComplete, hasCompleted]);
 
   const handleInputChange = (index: number, value: string) => {
-    // 数字のみ許可
     if (!/^\d*$/.test(value)) return;
 
     const newOtp = [...otp];
 
-    // 複数文字が貼り付けられた場合の処理
     if (value.length > 1) {
       const pastedValue = value.slice(0, length);
       for (let i = 0; i < pastedValue.length && i + index < length; i++) {
         newOtp[index + i] = pastedValue[i];
       }
       setOtp(newOtp);
-
-      // 次のフォーカス位置を計算
       const nextIndex = Math.min(index + pastedValue.length, length - 1);
       setActiveIndex(nextIndex);
     } else {
-      // 単一文字の入力
       newOtp[index] = value;
       setOtp(newOtp);
-
       if (value && index < length - 1) {
         setActiveIndex(index + 1);
       }
@@ -94,17 +87,15 @@ const OTPInput: React.FC<OTPInputProps> = ({
 
   const handleKeyDown = (
     index: number,
-    e: React.KeyboardEvent<HTMLInputElement>
+    e: React.KeyboardEvent<HTMLInputElement>,
   ) => {
     if (e.key === "Backspace") {
       e.preventDefault();
       const newOtp = [...otp];
 
       if (otp[index]) {
-        // 現在の位置に文字がある場合は削除
         newOtp[index] = "";
       } else if (index > 0) {
-        // 現在の位置が空で、前の位置に移動
         newOtp[index - 1] = "";
         setActiveIndex(index - 1);
       }
@@ -130,7 +121,6 @@ const OTPInput: React.FC<OTPInputProps> = ({
         newOtp[i] = pastedData[i];
       }
       setOtp(newOtp);
-
       const nextIndex = Math.min(pastedData.length, length - 1);
       setActiveIndex(nextIndex);
     }
@@ -159,11 +149,11 @@ const OTPInput: React.FC<OTPInputProps> = ({
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">
+        <h2 className="text-2xl font-bold text-gray-800 mb-2 text-balance">
           認証コードを入力
         </h2>
         {email && (
-          <p className="text-gray-600 text-sm">
+          <p className="text-gray-600 text-sm text-pretty">
             <span className="font-medium">{email}</span>{" "}
             に送信された6桁のコードを入力してください
           </p>
@@ -171,48 +161,56 @@ const OTPInput: React.FC<OTPInputProps> = ({
       </div>
 
       {/* OTP入力フィールド */}
-      <div className="flex justify-center space-x-2 mb-6">
-        {otp.map((digit, index) => (
-          <input
-            key={index}
-            ref={(el) => {
-              inputRefs.current[index] = el;
-            }}
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            maxLength={1}
-            value={digit}
-            onChange={(e) => handleInputChange(index, e.target.value)}
-            onKeyDown={(e) => handleKeyDown(index, e)}
-            onFocus={() => handleFocus(index)}
-            onPaste={handlePaste}
-            disabled={loading}
-            className={`
-              w-12 h-12 text-center text-xl font-bold border-2 rounded-lg
-              transition-all duration-200 ease-in-out
-              ${
-                activeIndex === index
-                  ? "border-juice-orange-500 ring-2 ring-juice-orange-200"
-                  : "border-gray-300 hover:border-gray-400"
-              }
-              ${digit ? "bg-juice-orange-50" : "bg-white"}
-              ${loading ? "opacity-50 cursor-not-allowed" : "cursor-text"}
-              ${error ? "border-red-500" : ""}
-              focus:outline-none focus:border-juice-orange-500 focus:ring-2 focus:ring-juice-orange-200
-            `}
-          />
-        ))}
-      </div>
+      <fieldset className="mb-6">
+        <legend className="sr-only">6桁の認証コード</legend>
+        <div className="flex justify-center gap-2">
+          {otp.map((digit, index) => (
+            <input
+              key={index}
+              ref={(el) => {
+                inputRefs.current[index] = el;
+              }}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={1}
+              value={digit}
+              onChange={(e) => handleInputChange(index, e.target.value)}
+              onKeyDown={(e) => handleKeyDown(index, e)}
+              onFocus={() => handleFocus(index)}
+              onPaste={handlePaste}
+              disabled={loading}
+              aria-label={`認証コード ${index + 1}桁目`}
+              className={`
+                size-12 sm:size-14 text-center text-xl sm:text-2xl font-bold border-[1.5px] rounded-xl
+                transition-all duration-200 ease-smooth shadow-sm
+                ${
+                  activeIndex === index
+                    ? "border-juice-orange-500 ring-2 ring-juice-orange-100 shadow-md"
+                    : "border-gray-300 hover:border-gray-400"
+                }
+                ${digit ? "bg-juice-orange-50/50" : "bg-white"}
+                ${loading ? "opacity-50 cursor-not-allowed" : "cursor-text"}
+                ${error ? "border-red-500 ring-red-100" : ""}
+                focus-visible:outline-none focus-visible:border-juice-orange-500 focus-visible:ring-2 focus-visible:ring-juice-orange-100
+              `.trim()}
+            />
+          ))}
+        </div>
+      </fieldset>
 
       {/* エラーメッセージ */}
       {error && (
-        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+        <div
+          className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm shadow-sm"
+          role="alert"
+        >
           <div className="flex items-center">
             <svg
-              className="w-4 h-4 mr-2"
+              className="size-4 mr-2 flex-shrink-0"
               fill="currentColor"
               viewBox="0 0 20 20"
+              aria-hidden="true"
             >
               <path
                 fillRule="evenodd"
@@ -231,9 +229,10 @@ const OTPInput: React.FC<OTPInputProps> = ({
           <div className="text-gray-600 text-sm mb-4">
             <div className="flex items-center justify-center mb-2">
               <svg
-                className="w-4 h-4 mr-1"
+                className="size-4 mr-1"
                 fill="currentColor"
                 viewBox="0 0 20 20"
+                aria-hidden="true"
               >
                 <path
                   fillRule="evenodd"
@@ -242,7 +241,7 @@ const OTPInput: React.FC<OTPInputProps> = ({
                 />
               </svg>
               残り時間:{" "}
-              <span className="font-mono font-bold">
+              <span className="font-mono font-bold tabular-nums">
                 {formatTime(timeLeft)}
               </span>
             </div>
@@ -251,12 +250,13 @@ const OTPInput: React.FC<OTPInputProps> = ({
             </p>
           </div>
         ) : (
-          <div className="text-red-600 text-sm mb-4">
+          <div className="text-red-600 text-sm mb-4" role="alert">
             <div className="flex items-center justify-center mb-2">
               <svg
-                className="w-4 h-4 mr-1"
+                className="size-4 mr-1"
                 fill="currentColor"
                 viewBox="0 0 20 20"
+                aria-hidden="true"
               >
                 <path
                   fillRule="evenodd"
@@ -295,21 +295,24 @@ const OTPInput: React.FC<OTPInputProps> = ({
 
         {/* クリアボタン */}
         <button
+          type="button"
           onClick={clearOtp}
           disabled={loading}
-          className="mt-4 text-sm text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-50"
+          aria-label="入力をクリア"
+          className="mt-4 text-sm text-gray-500 hover:text-gray-700 transition-colors duration-150 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-juice-orange-500 focus-visible:ring-offset-2 rounded"
         >
           入力をクリア
         </button>
       </div>
 
       {/* 説明 */}
-      <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+      <div className="mt-6 p-4 bg-blue-50/70 rounded-xl border border-blue-200 shadow-sm">
         <div className="flex items-start">
           <svg
-            className="w-5 h-5 text-blue-500 mr-2 mt-0.5 flex-shrink-0"
+            className="size-5 text-blue-500 mr-2 mt-0.5 flex-shrink-0"
             fill="currentColor"
             viewBox="0 0 20 20"
+            aria-hidden="true"
           >
             <path
               fillRule="evenodd"
@@ -320,11 +323,11 @@ const OTPInput: React.FC<OTPInputProps> = ({
           <div className="text-sm text-blue-800">
             <p className="font-medium mb-1">認証コードについて</p>
             <ul className="text-xs space-y-1">
-              <li>• メールで送信された6桁の数字を入力してください</li>
-              <li>• コードは5分間有効です</li>
-              <li>• コードは一度のみ使用可能です</li>
+              <li>・メールで送信された6桁の数字を入力してください</li>
+              <li>・コードは5分間有効です</li>
+              <li>・コードは一度のみ使用可能です</li>
               <li>
-                • メールが届かない場合は迷惑メールフォルダもご確認ください
+                ・メールが届かない場合は迷惑メールフォルダもご確認ください
               </li>
             </ul>
           </div>

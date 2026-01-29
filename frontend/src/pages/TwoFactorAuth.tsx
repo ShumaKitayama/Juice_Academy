@@ -22,13 +22,12 @@ const TwoFactorAuth: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [email, setEmail] = useState<string>("");
-  const [isSubmitting, setIsSubmitting] = useState(false); // 重複送信防止
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
   const auth = useAuth();
 
-  // 認証済みユーザーを自動的にホームページにリダイレクト
   useEffect(() => {
     if (auth.isAuthenticated && !auth.loading) {
       navigate("/", { replace: true });
@@ -36,16 +35,13 @@ const TwoFactorAuth: React.FC = () => {
     }
   }, [auth.isAuthenticated, auth.loading, navigate]);
 
-  // ログイン画面から渡されたメールアドレスを取得
   useEffect(() => {
-    // 認証済みの場合はスキップ
     if (auth.isAuthenticated) return;
 
     const state = location.state as { email?: string };
     if (state?.email) {
       setEmail(state.email);
     } else {
-      // メールアドレスがない場合はログイン画面に戻る
       navigate("/login", {
         state: {
           error: "認証セッションが無効です。再度ログインしてください。",
@@ -60,7 +56,6 @@ const TwoFactorAuth: React.FC = () => {
       return;
     }
 
-    // 既に送信中の場合は処理を中断
     if (isSubmitting) {
       return;
     }
@@ -90,12 +85,11 @@ const TwoFactorAuth: React.FC = () => {
         throw new Error(data.error || "認証に失敗しました");
       }
 
-      // 認証成功時の処理
       if (data.accessToken && data.csrfToken && data.user) {
         authAPI.saveSession(data.accessToken, data.csrfToken);
         localStorage.setItem("user", JSON.stringify(data.user));
         window.dispatchEvent(new Event("auth-changed"));
-        setSuccess("認証が完了しました。ダッシュボードに移動します...");
+        setSuccess("認証が完了しました。ダッシュボードに移動します…");
         navigate("/", { replace: true });
       } else {
         throw new Error("認証レスポンスが不正です");
@@ -105,7 +99,7 @@ const TwoFactorAuth: React.FC = () => {
       setError(
         apiError.response?.data?.error ||
           (error as Error).message ||
-          "認証に失敗しました"
+          "認証に失敗しました",
       );
     } finally {
       setLoading(false);
@@ -148,7 +142,7 @@ const TwoFactorAuth: React.FC = () => {
       setError(
         apiError.response?.data?.error ||
           (error as Error).message ||
-          "再送信に失敗しました"
+          "再送信に失敗しました",
       );
     } finally {
       setLoading(false);
@@ -159,16 +153,20 @@ const TwoFactorAuth: React.FC = () => {
     navigate("/login");
   };
 
+  const focusStyles =
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-juice-orange-500 focus-visible:ring-offset-2";
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-juice-orange-50 to-juice-yellow-50 flex items-center justify-center py-6 sm:py-12 px-3 sm:px-6 lg:px-8">
+    <div className="min-h-dvh bg-gray-50 flex items-center justify-center py-6 sm:py-12 px-3 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-6 sm:space-y-8">
         <div className="text-center">
-          <div className="mx-auto h-12 w-12 sm:h-16 sm:w-16 bg-juice-orange-500 rounded-full flex items-center justify-center mb-3 sm:mb-4">
+          <div className="mx-auto size-12 sm:size-16 bg-juice-orange-500 rounded-full flex items-center justify-center mb-3 sm:mb-4">
             <svg
-              className="h-6 w-6 sm:h-8 sm:w-8 text-white"
+              className="size-6 sm:size-8 text-white"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
+              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"
@@ -178,14 +176,15 @@ const TwoFactorAuth: React.FC = () => {
               />
             </svg>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 text-balance">
             Juice Academy
           </h1>
-          <p className="text-sm sm:text-base text-gray-600 px-2">
+          <p className="text-sm sm:text-base text-gray-600 px-2 text-pretty">
             セキュリティのため、二段階認証を完了してください
           </p>
           <p className="text-xs sm:text-sm text-gray-500 mt-2 break-all px-2">
-            {email} にワンタイムパスコードを送信しました
+            <span className="font-medium">{email}</span>{" "}
+            にワンタイムパスコードを送信しました
           </p>
         </div>
 
@@ -200,7 +199,7 @@ const TwoFactorAuth: React.FC = () => {
             loading={loading}
             error={error || undefined}
             email={email}
-            expiryTime={300} // 5分
+            expiryTime={300}
           />
 
           <div className="mt-8 flex flex-col space-y-3">
@@ -220,9 +219,10 @@ const TwoFactorAuth: React.FC = () => {
           <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 border border-gray-200">
             <div className="flex items-center justify-center mb-2">
               <svg
-                className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mr-2"
+                className="size-4 sm:size-5 text-green-500 mr-2"
                 fill="currentColor"
                 viewBox="0 0 20 20"
+                aria-hidden="true"
               >
                 <path
                   fillRule="evenodd"
@@ -234,7 +234,7 @@ const TwoFactorAuth: React.FC = () => {
                 セキュア認証
               </span>
             </div>
-            <p className="text-xs text-gray-600 leading-relaxed">
+            <p className="text-xs text-gray-600 leading-relaxed text-pretty">
               あなたのアカウントは二段階認証で保護されています。認証コードは暗号化されて送信され、5分間のみ有効です。
             </p>
           </div>
@@ -242,11 +242,11 @@ const TwoFactorAuth: React.FC = () => {
 
         {/* ヘルプリンク */}
         <div className="text-center">
-          <p className="text-xs text-gray-500 leading-relaxed px-2">
+          <p className="text-xs text-gray-500 leading-relaxed px-2 text-pretty">
             メールが届かない場合や問題がある場合は、
             <a
               href="mailto:support@juiceacademy.jp"
-              className="text-juice-orange-500 hover:text-juice-orange-600 font-medium ml-1"
+              className={`text-juice-orange-500 hover:text-juice-orange-600 font-medium ml-1 rounded ${focusStyles}`}
             >
               サポートチーム
             </a>

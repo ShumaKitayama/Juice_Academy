@@ -5,7 +5,6 @@ import ErrorAlert from "../components/ErrorAlert";
 import SuccessAlert from "../components/SuccessAlert";
 import { useAuth } from "../hooks/useAuth";
 
-// APIエラー型定義
 interface ApiError {
   response?: {
     data?: {
@@ -16,7 +15,7 @@ interface ApiError {
 
 const Register: React.FC = () => {
   const [formData, setFormData] = useState({
-    role: "student", // デフォルトは学生
+    role: "student",
     student_id: "",
     name_kana: "",
     email: "",
@@ -34,30 +33,25 @@ const Register: React.FC = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  // 氏名（カナ）のバリデーション
   const validateNameKana = (nameKana: string): boolean => {
     const katakanaPattern = /^[ァ-ヶー\s\u3000]+$/;
     return katakanaPattern.test(nameKana);
   };
 
-  // パスワードのバリデーション
   const validatePassword = (password: string): boolean => {
     if (password.length < 8) return false;
-
     const hasUpper = /[A-Z]/.test(password);
     const hasLower = /[a-z]/.test(password);
     const hasDigit = /[0-9]/.test(password);
-
     return hasUpper && hasLower && hasDigit;
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
-    // リアルタイムバリデーション
     const newValidationErrors = { ...validationErrors };
 
     if (name === "name_kana") {
@@ -84,7 +78,6 @@ const Register: React.FC = () => {
     e.preventDefault();
     setError(null);
 
-    // バリデーションチェック
     if (!validateNameKana(formData.name_kana)) {
       setError("氏名（カナ）はカタカナのみで入力してください");
       return;
@@ -92,12 +85,11 @@ const Register: React.FC = () => {
 
     if (!validatePassword(formData.password)) {
       setError(
-        "パスワードは8文字以上で、英字の大文字・小文字・数字をすべて含む必要があります"
+        "パスワードは8文字以上で、英字の大文字・小文字・数字をすべて含む必要があります",
       );
       return;
     }
 
-    // パスワード確認
     if (formData.password !== formData.confirmPassword) {
       setError("パスワードが一致しません");
       return;
@@ -106,12 +98,10 @@ const Register: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      // confirmPasswordを除いたデータを送信
       const { ...registerData } = formData;
       await register(registerData);
       setSuccess(true);
 
-      // 登録成功後、3秒後にログインページへリダイレクト
       setTimeout(() => {
         navigate("/login");
       }, 3000);
@@ -123,15 +113,20 @@ const Register: React.FC = () => {
     }
   };
 
+  const focusStyles =
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-juice-orange-500 focus-visible:ring-offset-2";
+
+  const inputStyles = `appearance-none block w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 text-sm transition-colors duration-150 ${focusStyles}`;
+
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-dvh flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full">
           <div className="text-center mb-10">
-            <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-juice-orange-400 to-juice-orange-600">
+            <h1 className="text-4xl font-bold text-juice-orange-500 text-balance">
               Juice Academy
             </h1>
-            <p className="mt-3 text-gray-600">
+            <p className="mt-3 text-gray-600 text-pretty">
               学校にドリンクバーを設置するためのサービス
             </p>
           </div>
@@ -142,7 +137,7 @@ const Register: React.FC = () => {
               <div className="mt-6">
                 <Link
                   to="/login"
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-juice-orange-500 hover:bg-juice-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-juice-orange-400"
+                  className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-juice-orange-500 hover:bg-juice-orange-600 transition-colors duration-150 ${focusStyles}`}
                 >
                   ログインページへ
                 </Link>
@@ -155,20 +150,20 @@ const Register: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-6 sm:py-12 px-3 sm:px-6 lg:px-8">
+    <div className="min-h-dvh flex items-center justify-center bg-gray-50 py-6 sm:py-12 px-3 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
         <div className="text-center mb-6 sm:mb-10">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-juice-orange-400 to-juice-orange-600">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-juice-orange-500 text-balance">
             Juice Academy
           </h1>
-          <p className="mt-2 sm:mt-3 text-sm sm:text-base text-gray-600 px-2">
+          <p className="mt-2 sm:mt-3 text-sm sm:text-base text-gray-600 px-2 text-pretty">
             学校にドリンクバーを設置するためのサービス
           </p>
         </div>
 
         <Card className="overflow-hidden">
           <div className="p-4 sm:p-6 md:p-8">
-            <h2 className="text-xl sm:text-2xl font-bold text-center text-gray-800 mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-center text-gray-800 mb-4 sm:mb-6 text-balance">
               新規アカウント登録
             </h2>
 
@@ -186,7 +181,7 @@ const Register: React.FC = () => {
                   id="role"
                   name="role"
                   required
-                  className="block w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-juice-orange-500 focus:border-juice-orange-500 text-sm"
+                  className={inputStyles}
                   value={formData.role}
                   onChange={handleChange}
                 >
@@ -207,7 +202,7 @@ const Register: React.FC = () => {
                   name="student_id"
                   type="text"
                   required
-                  className="appearance-none block w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-juice-orange-500 focus:border-juice-orange-500 text-sm"
+                  className={inputStyles}
                   placeholder="例: 12345678"
                   value={formData.student_id}
                   onChange={handleChange}
@@ -226,17 +221,21 @@ const Register: React.FC = () => {
                   name="name_kana"
                   type="text"
                   required
-                  className={`appearance-none block w-full px-3 sm:px-4 py-2 sm:py-3 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none text-sm ${
+                  className={`${inputStyles} ${
                     validationErrors.name_kana
-                      ? "border-red-500 focus:ring-red-500 focus:border-red-500"
-                      : "border-gray-300 focus:ring-juice-orange-500 focus:border-juice-orange-500"
+                      ? "border-red-500 focus-visible:ring-red-500"
+                      : ""
                   }`}
                   placeholder="例: ヤマダ タロウ"
                   value={formData.name_kana}
                   onChange={handleChange}
+                  aria-invalid={!!validationErrors.name_kana}
+                  aria-describedby={
+                    validationErrors.name_kana ? "name-kana-error" : undefined
+                  }
                 />
                 {validationErrors.name_kana && (
-                  <p className="mt-1 text-xs text-red-600">
+                  <p id="name-kana-error" className="mt-1 text-xs text-red-600">
                     {validationErrors.name_kana}
                   </p>
                 )}
@@ -258,10 +257,11 @@ const Register: React.FC = () => {
                   type="email"
                   autoComplete="email"
                   required
-                  className="appearance-none block w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-juice-orange-500 focus:border-juice-orange-500 text-sm"
+                  className={inputStyles}
                   placeholder="example@juiceacademy.jp"
                   value={formData.email}
                   onChange={handleChange}
+                  spellCheck={false}
                 />
               </div>
 
@@ -278,21 +278,30 @@ const Register: React.FC = () => {
                   type="password"
                   autoComplete="new-password"
                   required
-                  className={`appearance-none block w-full px-3 sm:px-4 py-2 sm:py-3 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none text-sm ${
+                  className={`${inputStyles} ${
                     validationErrors.password
-                      ? "border-red-500 focus:ring-red-500 focus:border-red-500"
-                      : "border-gray-300 focus:ring-juice-orange-500 focus:border-juice-orange-500"
+                      ? "border-red-500 focus-visible:ring-red-500"
+                      : ""
                   }`}
-                  placeholder="8文字以上の英数字"
+                  placeholder="8文字以上の英数字…"
                   value={formData.password}
                   onChange={handleChange}
+                  aria-invalid={!!validationErrors.password}
+                  aria-describedby={
+                    validationErrors.password
+                      ? "password-error"
+                      : "password-hint"
+                  }
                 />
                 {validationErrors.password && (
-                  <p className="mt-1 text-xs text-red-600">
+                  <p id="password-error" className="mt-1 text-xs text-red-600">
                     {validationErrors.password}
                   </p>
                 )}
-                <p className="mt-1 text-xs text-gray-500 leading-relaxed">
+                <p
+                  id="password-hint"
+                  className="mt-1 text-xs text-gray-500 leading-relaxed"
+                >
                   8文字以上、大文字・小文字・数字を含む
                 </p>
               </div>
@@ -310,8 +319,8 @@ const Register: React.FC = () => {
                   type="password"
                   autoComplete="new-password"
                   required
-                  className="appearance-none block w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-juice-orange-500 focus:border-juice-orange-500 text-sm"
-                  placeholder="パスワードを再入力"
+                  className={inputStyles}
+                  placeholder="パスワードを再入力…"
                   value={formData.confirmPassword}
                   onChange={handleChange}
                 />
@@ -321,19 +330,20 @@ const Register: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`w-full flex justify-center py-2 sm:py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
+                  className={`w-full flex justify-center py-2 sm:py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white transition-colors duration-150 ${
                     isSubmitting
-                      ? "bg-juice-orange-400"
+                      ? "bg-juice-orange-400 cursor-wait"
                       : "bg-juice-orange-500 hover:bg-juice-orange-600"
-                  } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-juice-orange-500 transition-colors duration-200`}
+                  } ${focusStyles}`}
                 >
                   {isSubmitting ? (
                     <span className="flex items-center">
                       <svg
-                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        className="animate-spin -ml-1 mr-2 size-4 text-white"
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
                         viewBox="0 0 24 24"
+                        aria-hidden="true"
                       >
                         <circle
                           className="opacity-25"
@@ -342,14 +352,14 @@ const Register: React.FC = () => {
                           r="10"
                           stroke="currentColor"
                           strokeWidth="4"
-                        ></circle>
+                        />
                         <path
                           className="opacity-75"
                           fill="currentColor"
                           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
+                        />
                       </svg>
-                      処理中...
+                      処理中…
                     </span>
                   ) : (
                     "登録する"
@@ -361,10 +371,12 @@ const Register: React.FC = () => {
             <div className="mt-4 sm:mt-6">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300"></div>
+                  <div className="w-full border-t border-gray-300" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500 text-xs sm:text-sm">または</span>
+                  <span className="px-2 bg-white text-gray-500 text-xs sm:text-sm">
+                    または
+                  </span>
                 </div>
               </div>
 
@@ -373,7 +385,7 @@ const Register: React.FC = () => {
                   既にアカウントをお持ちの方は
                   <Link
                     to="/login"
-                    className="ml-1 font-medium text-juice-orange-600 hover:text-juice-orange-500"
+                    className={`ml-1 font-medium text-juice-orange-600 hover:text-juice-orange-500 rounded ${focusStyles}`}
                   >
                     ログイン
                   </Link>
@@ -389,7 +401,8 @@ const Register: React.FC = () => {
 
         <div className="mt-6 sm:mt-8 text-center">
           <p className="text-xs text-gray-500">
-            &copy; {new Date().getFullYear()} Juice Academy. All rights reserved.
+            &copy; {new Date().getFullYear()} Juice Academy. All rights
+            reserved.
           </p>
         </div>
       </div>

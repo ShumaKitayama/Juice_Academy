@@ -14,7 +14,6 @@ const Login: React.FC = () => {
   const location = useLocation();
   const auth = useAuth();
 
-  // ページ読み込み時に前のページからのエラーメッセージを表示
   React.useEffect(() => {
     const state = location.state as { error?: string };
     if (state?.error) {
@@ -22,17 +21,15 @@ const Login: React.FC = () => {
     }
   }, [location.state]);
 
-  // 認証済みユーザーを自動的にホームページにリダイレクト
   React.useEffect(() => {
     if (auth.isAuthenticated && !auth.loading) {
       navigate("/", { replace: true });
     }
   }, [auth.isAuthenticated, auth.loading, navigate]);
 
-  // 認証状態確認中はローディング画面を表示
   if (auth.loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-dvh flex items-center justify-center bg-gray-50">
         <JuiceLoadingAnimation />
       </div>
     );
@@ -59,7 +56,6 @@ const Login: React.FC = () => {
         throw new Error(loginData.error || "ログインに失敗しました");
       }
 
-      // パスワード認証成功後にOTPを送信
       const otpResponse = await fetch(`${getApiUrl()}/otp/send`, {
         method: "POST",
         headers: {
@@ -91,42 +87,50 @@ const Login: React.FC = () => {
     }
   };
 
-  // ログイン成功アニメーションを表示
+  const focusStyles =
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-juice-orange-500 focus-visible:ring-offset-2";
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50 flex items-center justify-center py-6 sm:py-12 px-3 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full">
-        <div className="text-center mb-6 sm:mb-10">
-          <div className="flex justify-center mb-4 sm:mb-6">
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-xl sm:text-2xl">J</span>
+    <div className="min-h-dvh bg-gray-50 flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-sm w-full">
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="flex justify-center mb-4 sm:mb-5">
+            <div className="size-14 sm:size-16 bg-juice-orange-500 rounded-2xl flex items-center justify-center shadow-lg ring-4 ring-juice-orange-100">
+              <span className="text-white font-bold text-2xl sm:text-3xl">
+                J
+              </span>
             </div>
           </div>
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1.5 tracking-tight">
             Juice Academy
           </h1>
-          <p className="text-sm sm:text-base md:text-lg text-gray-600 px-2">
+          <p className="text-sm sm:text-base text-gray-500 text-pretty">
             美味しいドリンクライフを始めましょう
           </p>
         </div>
 
-        <Card variant="modern" padding="large" className="shadow-xl p-4 sm:p-6 md:p-8">
-          <div className="text-center mb-6 sm:mb-8">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
+        <Card variant="modern" padding="large" className="shadow-lg">
+          <div className="text-center mb-5 sm:mb-6">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-1 tracking-tight">
               アカウントにログイン
             </h2>
-            <p className="text-sm sm:text-base text-gray-600">
+            <p className="text-sm text-gray-500 text-pretty">
               ドリンクバーサービスをご利用ください
             </p>
           </div>
 
           {error && (
-            <div className="alert alert-danger mb-6">
+            <div
+              className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-5 shadow-sm"
+              role="alert"
+            >
               <div className="flex items-center">
                 <svg
-                  className="w-5 h-5 mr-3"
+                  className="size-5 mr-3 flex-shrink-0"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
                   <path
                     strokeLinecap="round"
@@ -140,7 +144,7 @@ const Login: React.FC = () => {
             </div>
           )}
 
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <form className="space-y-5" onSubmit={handleSubmit}>
             <div>
               <label className="form-label" htmlFor="email-address">
                 メールアドレス
@@ -151,10 +155,11 @@ const Login: React.FC = () => {
                 type="email"
                 autoComplete="email"
                 required
-                className="form-input"
-                placeholder="example@juiceacademy.jp"
+                className={`form-input ${focusStyles}`}
+                placeholder="example@juiceacademy.jp…"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                spellCheck={false}
               />
             </div>
 
@@ -168,7 +173,7 @@ const Login: React.FC = () => {
                 type="password"
                 autoComplete="current-password"
                 required
-                className="form-input"
+                className={`form-input ${focusStyles}`}
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -179,14 +184,15 @@ const Login: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="btn-primary w-full"
+                className={`btn-primary w-full ${focusStyles}`}
               >
                 {isSubmitting ? (
                   <>
                     <svg
-                      className="animate-spin w-4 h-4"
+                      className="animate-spin size-4"
                       fill="none"
                       viewBox="0 0 24 24"
+                      aria-hidden="true"
                     >
                       <circle
                         className="opacity-25"
@@ -195,14 +201,14 @@ const Login: React.FC = () => {
                         r="10"
                         stroke="currentColor"
                         strokeWidth="4"
-                      ></circle>
+                      />
                       <path
                         className="opacity-75"
                         fill="currentColor"
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
+                      />
                     </svg>
-                    処理中...
+                    処理中…
                   </>
                 ) : (
                   "ログイン"
@@ -214,7 +220,7 @@ const Login: React.FC = () => {
           <div className="mt-8">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200"></div>
+                <div className="w-full border-t border-gray-200" />
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-4 bg-white text-gray-500">または</span>
@@ -226,7 +232,7 @@ const Login: React.FC = () => {
                 アカウントをお持ちでない方は
                 <Link
                   to="/register"
-                  className="ml-1 font-semibold text-orange-600 hover:text-orange-700 transition-colors"
+                  className={`ml-1 font-semibold text-juice-orange-600 hover:text-juice-orange-700 transition-colors duration-150 rounded ${focusStyles}`}
                 >
                   新規登録
                 </Link>
@@ -236,19 +242,26 @@ const Login: React.FC = () => {
         </Card>
 
         <div className="mt-6 sm:mt-8 text-center px-2">
-          <p className="text-xs text-gray-500 leading-relaxed">
+          <p className="text-xs text-gray-500 leading-relaxed text-pretty">
             ログインすることで、
-            <a href="#" className="text-orange-600 hover:text-orange-700">
+            <a
+              href="#"
+              className={`text-juice-orange-600 hover:text-juice-orange-700 rounded ${focusStyles}`}
+            >
               利用規約
             </a>
             と
-            <a href="#" className="text-orange-600 hover:text-orange-700">
+            <a
+              href="#"
+              className={`text-juice-orange-600 hover:text-juice-orange-700 rounded ${focusStyles}`}
+            >
               プライバシーポリシー
             </a>
             に同意したことになります。
           </p>
           <p className="text-xs text-gray-400 mt-2">
-            &copy; {new Date().getFullYear()} Juice Academy. All rights reserved.
+            &copy; {new Date().getFullYear()} Juice Academy. All rights
+            reserved.
           </p>
         </div>
       </div>

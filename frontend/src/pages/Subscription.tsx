@@ -219,10 +219,13 @@ const Subscription: React.FC = () => {
   // サブスクリプション状態を確認中
   if (checkingStatus) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">サブスクリプション状態を確認中...</p>
+      <div className="min-h-dvh bg-gray-50 flex items-center justify-center">
+        <div className="text-center" role="status" aria-live="polite">
+          <div
+            className="animate-spin rounded-full size-12 border-b-2 border-juice-orange-600 mx-auto mb-4"
+            aria-hidden="true"
+          />
+          <p className="text-gray-600">サブスクリプション状態を確認中…</p>
         </div>
       </div>
     );
@@ -231,16 +234,16 @@ const Subscription: React.FC = () => {
   const hasActiveSubscription = subscriptionStatus?.hasActiveSubscription;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-2 sm:py-4 px-2 sm:px-4 lg:px-6">
-      <div className="max-w-6xl mx-auto animate-fade-in">
-        <div className="text-center mb-6 sm:mb-12 px-4">
-          <h1 className="text-xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+    <div className="min-h-dvh bg-gray-50 py-4 sm:py-6 px-3 sm:px-4 lg:px-6">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-8 sm:mb-12 px-4">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 tracking-tight">
             プラン選択
           </h1>
-          <p className="mt-2 sm:mt-4 max-w-2xl mx-auto text-sm sm:text-xl text-gray-500">
+          <p className="mt-3 sm:mt-4 max-w-2xl mx-auto text-sm sm:text-lg text-gray-500 text-pretty">
             {hasActiveSubscription
               ? "登録中のプランを確認"
-              : "最適なプランを選択"}
+              : "最適なプランを選択してください"}
           </p>
         </div>
 
@@ -310,7 +313,7 @@ const Subscription: React.FC = () => {
           {subscriptionPlans.map((plan, index) => (
             <div key={index} className="subscription-option flex">
               <Card
-                className={`flex flex-col w-full divide-y divide-gray-200 plan-card animate-slide-up ${
+                className={`relative flex flex-col w-full divide-y divide-gray-200 plan-card animate-slide-up overflow-hidden ${
                   selectedPlan === plan.id
                     ? "selected ring-2 ring-offset-2 ring-juice-orange-500"
                     : ""
@@ -318,10 +321,16 @@ const Subscription: React.FC = () => {
                 style={{ animationDelay: `${index * 150}ms` }}
               >
                 {plan.id === "plan_yearly" && !hasActiveSubscription && (
-                  <div
-                    className={`absolute top-0 right-0 -mt-2 -mr-2 bg-${plan.color}-500 rounded-full px-2 sm:px-3 py-1 text-white text-xs font-semibold transform rotate-3 shadow-md z-10`}
-                  >
-                    おすすめ
+                  <div className="absolute -top-1 -right-1 z-20">
+                    <div className="relative">
+                      <div className="bg-gradient-to-br from-juice-orange-500 via-juice-orange-600 to-juice-orange-700 text-white text-[11px] sm:text-xs font-bold px-5 sm:px-6 py-2 sm:py-2.5 shadow-xl transform origin-center">
+                        <span className="relative z-10 tracking-wide whitespace-nowrap drop-shadow-sm">
+                          おすすめ
+                        </span>
+                        <div className="absolute top-0 left-0 w-full h-1/2 bg-white/25 rounded-t-sm"></div>
+                      </div>
+                      <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-juice-orange-800 transform rotate-45 shadow-md"></div>
+                    </div>
                   </div>
                 )}
                 <div className="p-4 sm:p-6 flex-1 flex flex-col">
@@ -454,7 +463,7 @@ const Subscription: React.FC = () => {
               size="large"
               isLoading={loading}
               disabled={!selectedPlan || loading}
-              className="w-full sm:w-auto px-6 sm:px-8 btn-hover-effect bg-gradient-to-r from-blue-500 to-indigo-600 transform hover:-translate-y-1 hover:shadow-lg transition-all duration-200 text-sm sm:text-base"
+              className="w-full sm:w-auto px-6 sm:px-8 text-sm sm:text-base"
             >
               {hasActiveSubscription && isCanceled
                 ? "プランを更新・再開する"
