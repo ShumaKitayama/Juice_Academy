@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Card from "../components/Card";
 import ErrorAlert from "../components/ErrorAlert";
 import SuccessAlert from "../components/SuccessAlert";
+import TermsModal from "../components/TermsModal";
 import { useAuth } from "../hooks/useAuth";
 
 interface ApiError {
@@ -25,6 +26,8 @@ const Register: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const [validationErrors, setValidationErrors] = useState<{
     name_kana?: string;
     password?: string;
@@ -77,6 +80,11 @@ const Register: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!agreedToTerms) {
+      setError("アカウントを作成するには利用規約への同意が必要です");
+      return;
+    }
 
     if (!validateNameKana(formData.name_kana)) {
       setError("氏名（カナ）はカタカナのみで入力してください");
@@ -326,14 +334,50 @@ const Register: React.FC = () => {
                 />
               </div>
 
+              {/* 利用規約への同意 */}
+              <div className="pt-1">
+                <div className="flex items-start gap-3 p-3 sm:p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                  <div className="flex-shrink-0 mt-0.5">
+                    <input
+                      id="agreedToTerms"
+                      type="checkbox"
+                      checked={agreedToTerms}
+                      onChange={(e) => setAgreedToTerms(e.target.checked)}
+                      className="size-4 rounded border-gray-300 text-juice-orange-500 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-juice-orange-500 focus-visible:ring-offset-2"
+                    />
+                  </div>
+                  <label
+                    htmlFor="agreedToTerms"
+                    className="text-xs sm:text-sm text-gray-700 leading-relaxed cursor-pointer select-none"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setShowTermsModal(true)}
+                      className="font-semibold text-juice-orange-600 hover:text-juice-orange-700 underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-juice-orange-500 rounded"
+                    >
+                      利用規約
+                    </button>
+                    を読み、内容に同意します
+                    <span className="ml-1 text-red-500" aria-hidden="true">*</span>
+                  </label>
+                </div>
+                {!agreedToTerms && (
+                  <p className="mt-1.5 text-xs text-gray-500 pl-1">
+                    アカウント作成には利用規約への同意が必要です
+                  </p>
+                )}
+              </div>
+
               <div className="pt-3 sm:pt-4">
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !agreedToTerms}
                   className={`w-full flex justify-center py-2 sm:py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white transition-colors duration-150 ${
                     isSubmitting
                       ? "bg-juice-orange-400 cursor-wait"
-                      : "bg-juice-orange-500 hover:bg-juice-orange-600"
+                      : !agreedToTerms
+                        ? "bg-gray-300 cursor-not-allowed"
+                        : "bg-juice-orange-500 hover:bg-juice-orange-600"
                   } ${focusStyles}`}
                 >
                   {isSubmitting ? (
@@ -395,9 +439,21 @@ const Register: React.FC = () => {
           </div>
 
           <div className="px-4 sm:px-8 py-3 sm:py-4 bg-gray-50 border-t border-gray-200 text-center text-xs text-gray-500">
-            登録することで、利用規約とプライバシーポリシーに同意したことになります。
+            <button
+              type="button"
+              onClick={() => setShowTermsModal(true)}
+              className="underline underline-offset-2 hover:text-gray-700 transition-colors"
+            >
+              利用規約
+            </button>
+            は上記チェックボックスからご確認いただけます。
           </div>
         </Card>
+
+        <TermsModal
+          isOpen={showTermsModal}
+          onClose={() => setShowTermsModal(false)}
+        />
 
         <div className="mt-6 sm:mt-8 text-center">
           <p className="text-xs text-gray-500">

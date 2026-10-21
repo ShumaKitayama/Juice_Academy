@@ -11,16 +11,13 @@ const Footer: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 sm:gap-10">
           <div className="text-center sm:text-left">
             <div className="flex items-center justify-center sm:justify-start mb-3">
-              <div className="size-8 bg-juice-orange-500 rounded-lg flex items-center justify-center mr-2 shadow-sm">
-                <span className="text-white font-bold text-sm">J</span>
+              <div className="size-8 bg-gray-800 rounded-lg flex items-center justify-center mr-2 shadow-sm">
+                <span className="text-white font-bold text-sm">T</span>
               </div>
               <h3 className="text-base sm:text-lg font-bold text-gray-800 tracking-tight">
-                Juice Academy
+                株式会社TRISONA
               </h3>
             </div>
-            <p className="text-gray-600 text-xs sm:text-sm text-pretty leading-relaxed">
-              ジュースがくえん ー学校にドリンクバーを設置するためのサービスー
-            </p>
           </div>
 
           <div className="text-center sm:text-left">
@@ -56,20 +53,14 @@ const Footer: React.FC = () => {
               お問い合わせ
             </h3>
             <address className="text-gray-600 text-xs sm:text-sm not-italic leading-relaxed">
-              <p>〒123-4567</p>
-              <p>東京都渋谷区渋谷1-1-1</p>
-              <p>Juice Academy ビル</p>
+              <p>〒160-0023</p>
+              <p>東京都新宿区西新宿3丁目3番13号</p>
+              <p>西新宿水間ビル2F</p>
               <div className="mt-3 pt-3 border-t border-gray-200">
                 <p>
                   Email:{" "}
-                  <a href="mailto:info@juiceacademy.jp" className={linkStyles}>
-                    info@juiceacademy.jp
-                  </a>
-                </p>
-                <p className="mt-1">
-                  Tel:{" "}
-                  <a href="tel:03-1234-5678" className={linkStyles}>
-                    03-1234-5678
+                  <a href="mailto:trisona.uni@gmail.com" className={linkStyles}>
+                    trisona.uni@gmail.com
                   </a>
                 </p>
               </div>
@@ -79,7 +70,7 @@ const Footer: React.FC = () => {
 
         <div className="border-t border-gray-200 mt-8 sm:mt-10 pt-5 sm:pt-6 text-center text-xs sm:text-sm text-gray-500">
           <p>
-            &copy; {new Date().getFullYear()} Juice Academy. All rights
+            &copy; {new Date().getFullYear()} 株式会社TRISONA. All rights
             reserved.
           </p>
         </div>
